@@ -296,6 +296,63 @@ class RoadsFeatureContractTests(unittest.TestCase):
                 finally:
                     mutated_payload.unlink(missing_ok=True)
 
+    def test_output_aliases_are_rejected_before_any_write(self) -> None:
+        archive_path = os.environ.get("WF_CENSUS_ROADS_ZIP", "")
+        output_directory = os.environ.get("WF_ROADS_BUILD_TEST_DIR", "")
+        if not archive_path or not output_directory:
+            self.skipTest("Set source ZIP and task-local output directory to exercise output-path rejection")
+        directory = Path(output_directory)
+        directory.mkdir(parents=True, exist_ok=True)
+        alias_parent = directory / "output_alias_parent"
+        alias_parent.mkdir(exist_ok=True)
+        manifest = TERRAIN_DIR / "manifest.json"
+        horizontal = TERRAIN_DIR / "horizontal_xy.f64le"
+        heights = TERRAIN_DIR / "height_samples.f32le"
+        sentinel = b"pre-existing output must remain unchanged\n"
+
+        existing_output = directory / "aliased_existing_output.json"
+        existing_output.write_bytes(sentinel)
+        existing_vector_alias = alias_parent / ".." / existing_output.name
+        missing_output = directory / "aliased_missing_output.json"
+        missing_vector_alias = alias_parent / ".." / missing_output.name
+
+        hardlink_source = directory / "hardlink_output_source.json"
+        hardlink_alias = directory / "hardlink_output_alias.json"
+        hardlink_source.write_bytes(sentinel)
+        try:
+            with self.subTest(alias="normalized-existing"):
+                with self.assertRaisesRegex(ValueError, "must resolve to different files"):
+                    build_output(
+                        Path(archive_path), manifest, horizontal, heights,
+                        existing_output, existing_vector_alias,
+                    )
+                self.assertEqual(existing_output.read_bytes(), sentinel)
+
+            with self.subTest(alias="normalized-missing"):
+                self.assertFalse(missing_output.exists())
+                with self.assertRaisesRegex(ValueError, "must resolve to different files"):
+                    build_output(
+                        Path(archive_path), manifest, horizontal, heights,
+                        missing_output, missing_vector_alias,
+                    )
+                self.assertFalse(missing_output.exists())
+
+            with self.subTest(alias="hardlink-existing"):
+                os.link(hardlink_source, hardlink_alias)
+                with self.assertRaisesRegex(ValueError, "must resolve to different files"):
+                    build_output(
+                        Path(archive_path), manifest, horizontal, heights,
+                        hardlink_source, hardlink_alias,
+                    )
+                self.assertEqual(hardlink_source.read_bytes(), sentinel)
+                self.assertEqual(hardlink_alias.read_bytes(), sentinel)
+        finally:
+            existing_output.unlink(missing_ok=True)
+            missing_output.unlink(missing_ok=True)
+            hardlink_alias.unlink(missing_ok=True)
+            hardlink_source.unlink(missing_ok=True)
+            alias_parent.rmdir()
+
     def test_rebuilt_output_matches_committed_bytes_when_archive_available(self) -> None:
         archive_path = os.environ.get("WF_CENSUS_ROADS_ZIP", "")
         if not archive_path:

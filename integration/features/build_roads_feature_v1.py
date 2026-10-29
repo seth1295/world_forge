@@ -11,6 +11,7 @@ import hashlib
 import io
 import json
 import math
+import os
 import struct
 import sys
 import zipfile
@@ -77,6 +78,29 @@ def read_bounded_file(
     if len(buffer) != file_size:
         raise ValueError(f"file changed size or was truncated during its bounded read: {path.name}")
     return buffer
+
+
+def require_distinct_output_paths(output_path: Path, vector_path: Path) -> None:
+    """Reject destinations that refer to the same normalized or existing file."""
+    try:
+        resolved_output = output_path.expanduser().resolve(strict=False)
+        resolved_vector = vector_path.expanduser().resolve(strict=False)
+    except (OSError, RuntimeError) as error:
+        raise ValueError("feature output paths cannot be resolved safely") from error
+
+    normalized_output = os.path.normcase(os.path.normpath(os.fspath(resolved_output)))
+    normalized_vector = os.path.normcase(os.path.normpath(os.fspath(resolved_vector)))
+    if normalized_output == normalized_vector:
+        raise ValueError("feature collection and test-vector output paths must resolve to different files")
+
+    try:
+        if resolved_output.exists() and resolved_vector.exists() and os.path.samefile(
+            resolved_output,
+            resolved_vector,
+        ):
+            raise ValueError("feature collection and test-vector output paths must resolve to different files")
+    except OSError as error:
+        raise ValueError("feature output paths could not be verified as distinct files") from error
 
 
 def read_dbf(data: bytes) -> tuple[list[tuple[str, str, int]], list[dict[str, str]]]:
@@ -431,6 +455,7 @@ def build_output(
     output_path: Path,
     vector_path: Path,
 ) -> dict[str, Any]:
+    require_distinct_output_paths(output_path, vector_path)
     archive_bytes = read_bounded_file(archive_path, MAX_ARCHIVE_BYTES, ARCHIVE_BYTES)
     if len(archive_bytes) != ARCHIVE_BYTES or sha256(archive_bytes) != ARCHIVE_SHA256:
         raise ValueError("source ZIP size or SHA-256 does not match the selected 2026 Census archive")
