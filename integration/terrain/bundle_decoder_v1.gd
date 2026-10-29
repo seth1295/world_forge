@@ -19,11 +19,106 @@ var result: Dictionary = {}
 
 ## Decode a whitelisted real bundle. All file, source, frame, artifact, count, hash,
 ## and sample checks finish before geometry arrays are allocated.
-func decode(site_id: String, repository_root: String) -> void:
-    result = _decode_bundle(site_id, repository_root)
+func decode(site_id: String, repository_root: String, window_id: String = "") -> void:
+    result = _decode_bundle(site_id, repository_root, window_id)
 
-static func _decode_bundle(site_id: String, repository_root: String) -> Dictionary:
-    var site := SiteCatalog.get_site(site_id)
+## Decode two approved adjacent windows as one atomic consumer request. The v1 full-resolution
+## sample edges are checked before either tile set is returned for scene installation.
+func decode_window_set(site_id: String, repository_root: String, window_ids: Array[String]) -> void:
+    result = _decode_window_set(site_id, repository_root, window_ids)
+
+static func _decode_window_set(site_id: String, repository_root: String, window_ids: Array[String]) -> Dictionary:
+    if window_ids.is_empty() or window_ids.size() > 2:
+        return _failure("terrain window set must contain one or two windows")
+    if SiteCatalog.get_site(site_id).is_empty():
+        return _failure("unknown or unapproved terrain site")
+    var seen: Dictionary = {}
+    var decoded_windows: Array[Dictionary] = []
+    for window_id in window_ids:
+        if seen.has(window_id):
+            return _failure("terrain window set contains a duplicate window ID")
+        seen[window_id] = true
+        var window_decoder := TerrainBundleDecoderV1.new()
+        window_decoder.decode(site_id, repository_root, window_id)
+        var window_result: Dictionary = window_decoder.result
+        if not window_result.get("ok", false):
+            return _failure("window %s failed validation: %s" % [window_id, String(window_result.get("error", "unknown error"))])
+        decoded_windows.append(window_result)
+    if decoded_windows.size() == 2:
+        var adjacency: Dictionary = _order_and_validate_adjacent_pair(decoded_windows)
+        if not adjacency.get("ok", false):
+            return _failure(String(adjacency.get("error", "adjacent windows are incompatible")))
+        var ordered_windows: Array[Dictionary] = []
+        for ordered_window in adjacency["windows"]:
+            ordered_windows.append(ordered_window)
+        decoded_windows = ordered_windows
+    var ordered_ids: Array[String] = []
+    for decoded_window in decoded_windows:
+        ordered_ids.append(String(decoded_window["site"]["window_id"]))
+    return {
+        "ok": true,
+        "error": "",
+        "site_id": site_id,
+        "windows": decoded_windows,
+        "window_ids": ordered_ids,
+        "frame_id": String(decoded_windows[0]["manifest"]["frame"]["frame_id"]),
+        "lod_policy": "neighbor_locked_full_resolution"
+    }
+
+static func _order_and_validate_adjacent_pair(decoded_windows: Array[Dictionary]) -> Dictionary:
+    if decoded_windows.size() != 2:
+        return _failure("adjacent pair must contain exactly two windows")
+    var west: Dictionary = decoded_windows[0]
+    var east: Dictionary = decoded_windows[1]
+    var west_window: Dictionary = west["manifest"]["grid"]["source_window"]
+    var east_window: Dictionary = east["manifest"]["grid"]["source_window"]
+    if int(west_window["column_offset"]) > int(east_window["column_offset"]):
+        var swap := west
+        west = east
+        east = swap
+        west_window = west["manifest"]["grid"]["source_window"]
+        east_window = east["manifest"]["grid"]["source_window"]
+    var west_manifest: Dictionary = west["manifest"]
+    var east_manifest: Dictionary = east["manifest"]
+    var west_grid: Dictionary = west_manifest["grid"]
+    var east_grid: Dictionary = east_manifest["grid"]
+    if int(west_window["row_offset"]) != int(east_window["row_offset"]) or int(west_window["rows"]) != int(east_window["rows"]):
+        return _failure("adjacent windows must share the same source rows")
+    if int(west_window["column_offset"]) + int(west_window["columns"]) - 1 != int(east_window["column_offset"]):
+        return _failure("adjacent windows must share exactly one sample column")
+    if int(west_grid["sample_stride"]) != 1 or int(east_grid["sample_stride"]) != 1 or west_grid["resampling"] != "none" or east_grid["resampling"] != "none":
+        return _failure("adjacent seam policy requires full-resolution, non-resampled windows")
+    if int(west_window["column_offset"]) + int(west_window["columns"]) - 2 + 1 != int(east_window["column_offset"]):
+        return _failure("adjacent cell strips are not contiguous and disjoint")
+    if west_grid["region_id"] != east_grid["region_id"] or west_manifest["frame"] != east_manifest["frame"] or west["frame_hash"] != east["frame_hash"]:
+        return _failure("adjacent windows must share the exact regional frame identity")
+    if west_manifest["source"] != east_manifest["source"]:
+        return _failure("adjacent windows must share the exact approved source raster descriptor")
+    if west["artifact_id"] == east["artifact_id"]:
+        return _failure("adjacent windows must have distinct artifact identities")
+    # Footprint metadata is outer-pixel-edge based for AREA samples, so the metadata
+    # footprints may overlap by one pixel width. The center-to-center mesh strips do not.
+    var west_boundary: Dictionary = west["boundary_samples"]["east"]
+    var east_boundary: Dictionary = east["boundary_samples"]["west"]
+    if west_boundary["xy_f64le"] != east_boundary["xy_f64le"] or west_boundary["height_f32le"] != east_boundary["height_f32le"]:
+        return _failure("shared sample column bytes differ between adjacent windows")
+    var west_vertices: PackedVector3Array = west["vertices"]
+    var east_vertices: PackedVector3Array = east["vertices"]
+    var west_columns := int(west["columns"])
+    var east_columns := int(east["columns"])
+    var rows := int(west["rows"])
+    for row in range(rows):
+        var west_edge := west_vertices[row * west_columns + west_columns - 1]
+        var east_edge := east_vertices[row * east_columns]
+        if west_edge.distance_to(east_edge) > 0.000001:
+            return _failure("shared sample column geometry differs between adjacent windows")
+    var ordered_windows: Array[Dictionary] = []
+    ordered_windows.append(west)
+    ordered_windows.append(east)
+    return {"ok": true, "error": "", "windows": ordered_windows}
+
+static func _decode_bundle(site_id: String, repository_root: String, window_id: String = "") -> Dictionary:
+    var site := SiteCatalog.get_site(site_id) if window_id.is_empty() else SiteCatalog.get_window(site_id, window_id)
     if site.is_empty():
         return _failure("unknown or unapproved terrain site")
     if repository_root.is_empty() or not DirAccess.dir_exists_absolute(repository_root):
@@ -108,7 +203,8 @@ static func _decode_bundle(site_id: String, repository_root: String) -> Dictiona
         "sample_min_height_m": float(payload_validation["sample_min_height_m"]),
         "sample_max_height_m": float(payload_validation["sample_max_height_m"]),
         "frame_hash": contract_result["frame_hash"],
-        "artifact_id": contract_result["artifact_id"]
+        "artifact_id": contract_result["artifact_id"],
+        "boundary_samples": _extract_boundary_samples(horizontal_bytes, height_bytes, int(size_result["rows"]), int(size_result["columns"]))
     }
 
 static func _read_schema(path: String) -> Dictionary:
@@ -231,6 +327,27 @@ static func _read_bounded_file(path: String, expected_bytes: int, cap_bytes: int
     if HashV1.sha256_bytes(bytes) != expected_sha256:
         return _failure("terrain payload changed between streaming hash and bounded read")
     return {"ok": true, "bytes": bytes, "error": ""}
+static func _extract_boundary_samples(horizontal_bytes: PackedByteArray, height_bytes: PackedByteArray, rows: int, columns: int) -> Dictionary:
+    return {
+        "west": {
+            "xy_f64le": _extract_boundary_column(horizontal_bytes, rows, columns, 0, 16),
+            "height_f32le": _extract_boundary_column(height_bytes, rows, columns, 0, 4)
+        },
+        "east": {
+            "xy_f64le": _extract_boundary_column(horizontal_bytes, rows, columns, columns - 1, 16),
+            "height_f32le": _extract_boundary_column(height_bytes, rows, columns, columns - 1, 4)
+        }
+    }
+
+static func _extract_boundary_column(payload: PackedByteArray, rows: int, columns: int, column: int, bytes_per_sample: int) -> PackedByteArray:
+    var boundary := PackedByteArray()
+    boundary.resize(rows * bytes_per_sample)
+    for row in range(rows):
+        var source_offset := (row * columns + column) * bytes_per_sample
+        var destination_offset := row * bytes_per_sample
+        for byte_index in range(bytes_per_sample):
+            boundary[destination_offset + byte_index] = payload[source_offset + byte_index]
+    return boundary
 static func _validate_samples(manifest: Dictionary, horizontal_bytes: PackedByteArray, height_bytes: PackedByteArray, sample_count: int) -> Dictionary:
     var grid: Dictionary = manifest["grid"]
     var frame: Dictionary = manifest["frame"]

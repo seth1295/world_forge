@@ -41,14 +41,18 @@ func run_suite(suite_name: String) -> int:
             await _run_collision_tests()
         "lifecycle":
             await _run_lifecycle_tests()
+        "adjacent":
+            _run_contract_tests()
+            await _run_adjacent_lifecycle_tests()
         "all":
             _run_contract_tests()
             _run_geodetic_tests()
             _run_origin_rebase_tests()
             await _run_collision_tests()
             await _run_lifecycle_tests()
+            await _run_adjacent_lifecycle_tests()
         _:
-            _check(false, "supported suite name is contracts, geodetic, rebase, collision, lifecycle, or all")
+            _check(false, "supported suite name is contracts, geodetic, rebase, collision, lifecycle, adjacent, or all")
     _report_summary()
     return 1 if _failures > 0 else 0
 
@@ -153,8 +157,66 @@ func _run_contract_tests() -> void:
         _check(not length_result.get("ok", false), "%s rejects payload length inconsistent with dimensions" % site_id)
 
     _run_catalog_window_design_tests()
+    _run_adjacent_window_validation_tests()
     _run_tampered_payload_test()
     _run_bounded_read_tests()
+
+func _run_adjacent_window_validation_tests() -> void:
+    var ids: Array[String] = ["golden-west", "golden-east"]
+    var decoder := Decoder.new()
+    decoder.decode_window_set("golden", _repository_root, ids)
+    var result: Dictionary = decoder.result
+    var decoded_ok := bool(result.get("ok", false))
+    _check(decoded_ok, "producer-generated Golden west/east bundles validate as one adjacent window set: %s" % String(result.get("error", "")))
+    if not decoded_ok:
+        return
+    _decoded_by_site["golden-adjacent"] = result
+    var windows: Array[Dictionary] = result["windows"]
+    var west: Dictionary = windows[0]
+    var east: Dictionary = windows[1]
+    var west_window: Dictionary = west["manifest"]["grid"]["source_window"]
+    var east_window: Dictionary = east["manifest"]["grid"]["source_window"]
+    _check(String(west["site"]["window_id"]) == "golden-west" and String(east["site"]["window_id"]) == "golden-east", "adjacent set is ordered west to east")
+    _check(int(west_window["row_offset"]) == 2544 and int(east_window["row_offset"]) == 2544 and int(west_window["rows"]) == 216 and int(east_window["rows"]) == 216, "adjacent windows share the approved 216 source rows at row offset 2544")
+    _check(int(west_window["column_offset"]) == 8214 and int(west_window["columns"]) == 217 and int(east_window["column_offset"]) == 8430 and int(east_window["columns"]) == 216, "adjacent windows match their approved source columns and dimensions")
+    _check(int(west_window["column_offset"]) + int(west_window["columns"]) - 1 == int(east_window["column_offset"]), "west/east windows share exactly source sample column 8430")
+    _check(west["manifest"]["frame"] == east["manifest"]["frame"] and west["manifest"]["source"] == east["manifest"]["source"], "adjacent windows have the identical full frame and source raster identity")
+    _check(west["boundary_samples"]["east"]["xy_f64le"] == east["boundary_samples"]["west"]["xy_f64le"], "shared column 8430 Float64 XY bytes are identical across all rows")
+    _check(west["boundary_samples"]["east"]["height_f32le"] == east["boundary_samples"]["west"]["height_f32le"], "shared column 8430 Float32 height bytes are identical across all rows")
+    _check(String(west["artifact_id"]) != String(east["artifact_id"]), "adjacent windows retain distinct artifact IDs")
+    var west_cells_end_sample := int(west_window["column_offset"]) + int(west_window["columns"]) - 1
+    var east_cells_start_sample := int(east_window["column_offset"])
+    _check(west_cells_end_sample == east_cells_start_sample, "center-to-center cell strips meet at the shared sample without area overlap")
+
+    var west_vertices: PackedVector3Array = west["vertices"]
+    var east_vertices: PackedVector3Array = east["vertices"]
+    var west_columns := int(west["columns"])
+    var east_columns := int(east["columns"])
+    var max_seam_delta_m := 0.0
+    for row in range(int(west["rows"])):
+        var west_edge := west_vertices[row * west_columns + west_columns - 1]
+        var east_edge := east_vertices[row * east_columns]
+        max_seam_delta_m = maxf(max_seam_delta_m, west_edge.distance_to(east_edge))
+    print("WF_GOLDEN_ADJACENT_MAX_SHARED_VERTEX_DELTA_M=%.12f" % max_seam_delta_m)
+    _check(max_seam_delta_m == 0.0, "shared sample column produces identical local seam vertices")
+
+    var reversed_ids: Array[String] = ["golden-east", "golden-west"]
+    var reversed_decoder := Decoder.new()
+    reversed_decoder.decode_window_set("golden", _repository_root, reversed_ids)
+    var reversed_result: Dictionary = reversed_decoder.result
+    _check(reversed_result.get("ok", false) and String(reversed_result["windows"][0]["site"]["window_id"]) == "golden-west", "adjacency normalization accepts reversed request order and returns west/east order")
+
+    var duplicate_ids: Array[String] = ["golden-west", "golden-west"]
+    var duplicate_decoder := Decoder.new()
+    duplicate_decoder.decode_window_set("golden", _repository_root, duplicate_ids)
+    _check(not duplicate_decoder.result.get("ok", false), "adjacent window set rejects duplicate window IDs")
+
+    var mismatch_windows: Array[Dictionary] = [west.duplicate(true), east.duplicate(true)]
+    var changed_edge: PackedByteArray = mismatch_windows[0]["boundary_samples"]["east"]["height_f32le"]
+    changed_edge[0] = changed_edge[0] ^ 0x01
+    mismatch_windows[0]["boundary_samples"]["east"]["height_f32le"] = changed_edge
+    var mismatch_result: Dictionary = Decoder._order_and_validate_adjacent_pair(mismatch_windows)
+    _check(not mismatch_result.get("ok", false) and String(mismatch_result.get("error", "")).contains("shared sample column bytes"), "adjacent pair validator rejects one mutated shared-edge height byte")
 
 func _run_catalog_window_design_tests() -> void:
     var shared_source: Dictionary = {"product_id": "USGS shared raster", "raster": {"sha256": "628fd3bd2b2de7e36d37f7a28050db9f34bc73a7b9a8f77f54a488ec8ce757d0"}}
@@ -163,14 +225,15 @@ func _run_catalog_window_design_tests() -> void:
         "frame_id": "wf-fixture:shared-frame",
         "source": shared_source,
         "windows": {
-            "west": {"bundle_directory": "fixture-west", "artifact_id": "west-window-artifact", "source_window": {"row_offset": 100, "column_offset": 200}},
-            "east": {"bundle_directory": "fixture-east", "artifact_id": "east-window-artifact", "source_window": {"row_offset": 100, "column_offset": 416}}
+            "west": {"bundle_directory": "fixture-west", "artifact_id": "west-window-artifact", "source_window": {"row_offset": 100, "column_offset": 200}, "source_overrides": {"acquisition_time_basis": "receipt"}},
+            "east": {"bundle_directory": "fixture-east", "artifact_id": "east-window-artifact", "source_window": {"row_offset": 100, "column_offset": 416}, "source_overrides": {"acquisition_time_basis": "receipt"}}
         }
     }
     var west_window := SiteCatalog.make_window_record(site_definition, "west")
     var east_window := SiteCatalog.make_window_record(site_definition, "east")
     _check(not west_window.is_empty() and not east_window.is_empty(), "site catalog resolves more than one window record")
     _check(west_window.get("frame_id") == east_window.get("frame_id") and west_window.get("source") == east_window.get("source"), "adjacent-window records inherit one shared source-raster and frame identity")
+    _check(west_window["source"]["raster"]["sha256"] == shared_source["raster"]["sha256"] and west_window["source"]["acquisition_time_basis"] == "receipt", "window source overrides retain the full shared raster descriptor while recording per-window receipt provenance")
     _check(west_window.get("artifact_id") != east_window.get("artifact_id") and west_window.get("source_window") != east_window.get("source_window"), "adjacent-window records retain distinct artifact and source-window identity")
     _check(SiteCatalog.make_window_record(site_definition, "unknown").is_empty(), "site catalog rejects an unknown window ID")
 func _run_bounded_read_tests() -> void:
@@ -411,6 +474,95 @@ func _run_lifecycle_tests() -> void:
     await get_tree().process_frame
     await get_tree().process_frame
     _check(not is_instance_valid(shutdown_manager), "scene shutdown drains its worker before releasing the manager")
+
+func _run_adjacent_lifecycle_tests() -> void:
+    var manager: TerrainStreamManagerV1 = StreamManager.new()
+    add_child(manager)
+    var installed_sets: Array[Array] = []
+    var load_errors: Array[String] = []
+    manager.window_set_loaded.connect(func(_request_id: int, _site_id: String, window_ids: Array[String], _frame_id: String) -> void: installed_sets.append(window_ids.duplicate()))
+    manager.load_failed.connect(func(_request_id: int, _site_id: String, message: String) -> void: load_errors.append(message))
+    var requested_ids: Array[String] = ["golden-east", "golden-west"]
+    var request_id := manager.request_window_set("golden", requested_ids)
+    _check(manager.get_active_worker_count() <= 1 and manager.get_queued_request_count() <= 1, "adjacent window-set decode obeys the bounded worker/latest-request policy")
+    await _wait_for_window_set(manager, ["golden-west", "golden-east"])
+    var loaded_ids: Array[String] = manager.loaded_window_ids
+    _check(manager.loaded_site_id == "golden" and loaded_ids == ["golden-west", "golden-east"], "one request atomically installs both adjacent Golden windows in canonical order: %s" % "; ".join(load_errors))
+    _check(manager.get_loaded_tile_count() == 2 and installed_sets.size() == 1, "the complete pair emits one install event and owns exactly two terrain tiles: %s" % "; ".join(load_errors))
+    if manager.get_loaded_tile_count() != 2 or not _decoded_by_site.has("golden-adjacent"):
+        manager.unload()
+        manager.queue_free()
+        await get_tree().process_frame
+        return
+
+    var pair: Dictionary = _decoded_by_site["golden-adjacent"]
+    var decoded_windows: Array[Dictionary] = pair["windows"]
+    var west_decoded: Dictionary = decoded_windows[0]
+    var east_decoded: Dictionary = decoded_windows[1]
+    var west_tile := manager.get_loaded_tile("golden-west")
+    var east_tile := manager.get_loaded_tile("golden-east")
+    _check(west_tile != null and east_tile != null and west_tile.get_parent() == manager and east_tile.get_parent() == manager, "both neighbor render/collision roots are installed under the same manager")
+    if west_tile != null and east_tile != null:
+        for tile in [west_tile, east_tile]:
+            _check(int(tile.get_meta("lod_level", -1)) == 0 and int(tile.get_meta("sample_stride", -1)) == 1, "adjacent tile stays at full-resolution LOD level 0")
+            _check(String(tile.get_meta("lod_policy", "")) == "neighbor_locked_full_resolution", "adjacent tile advertises the shared seam-safe neighbor LOD policy")
+            _check(tile.get_node_or_null("TerrainSurface") != null and tile.get_node_or_null("TerrainCollision") != null, "each adjacent window installs both a visible mesh and static collision body")
+        var west_body: StaticBody3D = west_tile.get_node("TerrainCollision")
+        var east_body: StaticBody3D = east_tile.get_node("TerrainCollision")
+        var west_vertices: PackedVector3Array = west_decoded["vertices"]
+        var east_vertices: PackedVector3Array = east_decoded["vertices"]
+        var row := 107
+        var west_columns := int(west_decoded["columns"])
+        var east_columns := int(east_decoded["columns"])
+        var west_probe: Vector3 = west_vertices[row * west_columns + west_columns - 2]
+        var east_probe: Vector3 = east_vertices[row * east_columns + 1]
+        var seam_west: Vector3 = west_vertices[row * west_columns + west_columns - 1]
+        var seam_east: Vector3 = east_vertices[row * east_columns]
+        await _check_upward_terrain_ray(west_probe, [west_body], west_body, "west adjacent tile interior")
+        await _check_upward_terrain_ray(east_probe, [east_body], east_body, "east adjacent tile interior")
+        _check(seam_west == seam_east, "installed neighbor meshes use the same local vertex at their shared sample")
+        await _check_upward_terrain_ray(seam_west, [west_body, east_body], null, "shared adjacent tile boundary")
+    else:
+        _check(false, "both adjacent tile roots exist before collision probes")
+
+    _check(installed_sets[0] == ["golden-west", "golden-east"], "install signal reports one ordered complete window set")
+    _check(request_id > 0, "adjacent load preserves the originating request ID")
+    var unloaded_id := manager.unload()
+    _check(unloaded_id > request_id and manager.get_loaded_tile_count() == 0 and manager.loaded_window_ids.is_empty(), "unload releases the adjacent pair as one manager operation")
+    _check(manager.get_children().is_empty(), "atomic adjacent unload detaches every render and collision root immediately")
+    await get_tree().process_frame
+    _check(manager.get_active_worker_count() == 0 and manager.get_queued_request_count() == 0, "adjacent install/unload leaves no decoder task or queued set")
+    manager.queue_free()
+    await get_tree().process_frame
+
+func _wait_for_window_set(manager: TerrainStreamManagerV1, expected_ids: Array[String]) -> void:
+    var frames_left := 1800
+    while manager.loaded_window_ids != expected_ids and manager.get_pending_task_count() > 0 and frames_left > 0:
+        await get_tree().process_frame
+        frames_left -= 1
+    _check(frames_left > 0, "adjacent Golden pair completes before the functional test timeout")
+
+func _check_upward_terrain_ray(expected_position: Vector3, allowed_bodies: Array[StaticBody3D], required_body: StaticBody3D, description: String) -> void:
+    var ray := RayCast3D.new()
+    ray.name = "AdjacentTileCollisionReadinessCheck"
+    ray.collision_mask = 1
+    ray.collide_with_areas = false
+    ray.collide_with_bodies = true
+    ray.hit_back_faces = true
+    ray.position = expected_position + Vector3(0.0, -50.0, 0.0)
+    ray.target_position = Vector3(0.0, 100.0, 0.0)
+    add_child(ray)
+    await get_tree().physics_frame
+    await get_tree().physics_frame
+    _check(ray.is_colliding(), "%s upward ray is ready after install" % description)
+    if ray.is_colliding():
+        var collider: Object = ray.get_collider()
+        _check(allowed_bodies.has(collider), "%s upward ray hits one of the intended neighboring collision bodies" % description)
+        if required_body != null:
+            _check(collider == required_body, "%s upward ray resolves to the owning tile collision body" % description)
+        _check(ray.get_collision_point().distance_to(expected_position) <= 0.001, "%s upward ray intersects the decoded sample position within 1 mm" % description)
+    ray.queue_free()
+    await get_tree().process_frame
 func _wait_for_site(manager: TerrainStreamManagerV1, site_id: String) -> void:
     var frames_left := 1800
     while manager.loaded_site_id != site_id and manager.get_pending_task_count() > 0 and frames_left > 0:

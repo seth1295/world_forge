@@ -21,11 +21,12 @@ func _ready() -> void:
     _build_technical_ui()
     _stream_manager.load_started.connect(_on_load_started)
     _stream_manager.load_succeeded.connect(_on_load_succeeded)
+    _stream_manager.window_set_loaded.connect(_on_window_set_loaded)
     _stream_manager.load_failed.connect(_on_load_failed)
     _stream_manager.unloaded.connect(_on_unloaded)
     _capture_output_path = _argument_value("--capture")
-    var requested_site := _argument_value("--site")
-    if not SiteCatalog.SITES.has(requested_site):
+    var requested_site := "golden-adjacent" if _argument_value("--tile-set") == "golden-adjacent" else _argument_value("--site")
+    if not SiteCatalog.SITES.has(requested_site) and requested_site != "golden-adjacent":
         requested_site = "baltimore"
     _select_site(requested_site, true)
 
@@ -118,6 +119,9 @@ func _build_technical_ui() -> void:
         var site := SiteCatalog.get_site(site_id)
         _site_selector.add_item(String(site["display_name"]), index)
         _site_selector.set_item_metadata(index, site_id)
+    var adjacent_index := _site_selector.item_count
+    _site_selector.add_item("Golden / adjacent tiles")
+    _site_selector.set_item_metadata(adjacent_index, "golden-adjacent")
     _site_selector.item_selected.connect(_on_site_option_selected)
     selector_row.add_child(_site_selector)
 
@@ -149,7 +153,8 @@ func _build_technical_ui() -> void:
     column.add_child(boundary_label)
 
 func _select_site(site_id: String, start_load: bool) -> void:
-    var site := SiteCatalog.get_site(site_id)
+    var catalog_site_id := "golden" if site_id == "golden-adjacent" else site_id
+    var site := SiteCatalog.get_site(catalog_site_id)
     if site.is_empty():
         _status_label.text = "ERROR  /  site is not approved"
         return
@@ -168,7 +173,11 @@ func _select_site(site_id: String, start_load: bool) -> void:
         String(site["frame_id"])
     ]
     if start_load:
-        _stream_manager.request_site(site_id)
+        if site_id == "golden-adjacent":
+            var adjacent_windows: Array[String] = ["golden-west", "golden-east"]
+            _stream_manager.request_window_set("golden", adjacent_windows)
+        else:
+            _stream_manager.request_site(site_id)
 
 func _on_site_option_selected(index: int) -> void:
     var site_id := String(_site_selector.get_item_metadata(index))
@@ -191,6 +200,19 @@ func _on_load_succeeded(_request_id: int, site_id: String, artifact_id: String, 
         absf(float(site["anchor_longitude_deg"])),
         frame_id,
         artifact_id.substr(0, 12)
+    ]
+    if not _capture_output_path.is_empty():
+        call_deferred("_capture_runtime_view", _capture_output_path)
+
+func _on_window_set_loaded(_request_id: int, site_id: String, window_ids: Array[String], frame_id: String) -> void:
+    var site := SiteCatalog.get_site(site_id)
+    _status_label.text = "LOADED  /  %d adjacent windows  /  full-resolution shared-frame mesh" % window_ids.size()
+    _detail_label.text = "%s\n%.8f° N  %.8f° W\n%s · %s\nNeighbor LOD locked at level 0" % [
+        String(site["display_name"]),
+        float(site["anchor_latitude_deg"]),
+        absf(float(site["anchor_longitude_deg"])),
+        frame_id,
+        ", ".join(window_ids)
     ]
     if not _capture_output_path.is_empty():
         call_deferred("_capture_runtime_view", _capture_output_path)

@@ -3,7 +3,7 @@ extends RefCounted
 
 ## Build renderer and static collision resources only after the decoder has validated
 ## the manifest and every sample. Both resources share one local-space vertex set.
-static func create_tile(decoded: Dictionary) -> Node3D:
+static func create_tile(decoded: Dictionary, lod_policy: String = "single_window_full_resolution") -> Node3D:
     if not decoded.get("ok", false):
         return null
     var vertices: PackedVector3Array = decoded["vertices"]
@@ -31,11 +31,16 @@ static func create_tile(decoded: Dictionary) -> Node3D:
     mesh.surface_set_material(0, material)
 
     var root := Node3D.new()
-    root.name = "TerrainTile_%s" % String(decoded["site"]["site_id"])
+    var window_id := String(decoded["site"].get("window_id", "window-0"))
+    root.name = "TerrainTile_%s_%s" % [String(decoded["site"]["site_id"]), window_id]
     root.set_meta("site_id", decoded["site"]["site_id"])
+    root.set_meta("window_id", window_id)
     root.set_meta("region_id", decoded["manifest"]["grid"]["region_id"])
     root.set_meta("frame_id", decoded["manifest"]["frame"]["frame_id"])
     root.set_meta("artifact_id", decoded["artifact_id"])
+    root.set_meta("lod_level", 0)
+    root.set_meta("sample_stride", int(decoded["manifest"]["grid"]["sample_stride"]))
+    root.set_meta("lod_policy", lod_policy)
 
     var mesh_instance := MeshInstance3D.new()
     mesh_instance.name = "TerrainSurface"

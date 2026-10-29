@@ -175,6 +175,28 @@ const SITES := {
                 "camera_position_local_m": Vector3(-1198.3306255951975, 118.5, 904.5941632146123),
                 "camera_target_local_m": Vector3(-1714.2119027677074, 364.36767578125, 1099.8264649481891),
             },
+            "golden-west": {
+                "bundle_directory": "golden-west",
+                "artifact_id": "f9ac01b194d487e6cfd69ac5b095af5fb6c268b76aaab873a51d515be7953132",
+                "rows": 216,
+                "columns": 217,
+                "source_window": {"row_offset": 2544, "column_offset": 8214, "rows": 216, "columns": 217},
+                "source_overrides": {"acquisition_time_basis": "recorded_download_receipt"},
+                "producer": {"name": "WorldForge Terrain Grid Producer", "version": "1.0.0", "commit": "fc9ff8a605de4cc167a2885eba4c720acd40e92e"},
+                "camera_position_local_m": Vector3(-1198.3306255951975, 118.5, 904.5941632146123),
+                "camera_target_local_m": Vector3(-1714.2119027677074, 364.36767578125, 1099.8264649481891),
+            },
+            "golden-east": {
+                "bundle_directory": "golden-east",
+                "artifact_id": "cbda8c91369c60315a0caff753583ac05df8d1aa25a91208b75fc9df4a7e62c8",
+                "rows": 216,
+                "columns": 216,
+                "source_window": {"row_offset": 2544, "column_offset": 8430, "rows": 216, "columns": 216},
+                "source_overrides": {"acquisition_time_basis": "recorded_download_receipt"},
+                "producer": {"name": "WorldForge Terrain Grid Producer", "version": "1.0.0", "commit": "fc9ff8a605de4cc167a2885eba4c720acd40e92e"},
+                "camera_position_local_m": Vector3(-1198.3306255951975, 118.5, 904.5941632146123),
+                "camera_target_local_m": Vector3(-1714.2119027677074, 364.36767578125, 1099.8264649481891),
+            },
         },
     },
 }
@@ -212,6 +234,13 @@ static func make_window_record(site_definition: Dictionary, window_id: String) -
     var record: Dictionary = site_definition.duplicate(true)
     var window: Dictionary = windows[window_id].duplicate(true)
     for key in window:
+        if key == "source_overrides" and typeof(window[key]) == TYPE_DICTIONARY:
+            var source_record: Dictionary = record.get("source", {}).duplicate(true)
+            var source_overrides: Dictionary = window[key]
+            for source_key in source_overrides:
+                source_record[source_key] = source_overrides[source_key]
+            record["source"] = source_record
+            continue
         record[key] = window[key]
     record["window_id"] = window_id
     return record

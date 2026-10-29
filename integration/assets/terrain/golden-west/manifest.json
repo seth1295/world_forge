@@ -1,0 +1,151 @@
+{
+  "artifact_id": "f9ac01b194d487e6cfd69ac5b095af5fb6c268b76aaab873a51d515be7953132",
+  "contract_id": "urn:worldforge:contract:terrain-grid:1.0.0",
+  "frame": {
+    "frame_id": "wf-vs01:golden-grs80-aeqd",
+    "horizontal": {
+      "datum": "NAD83",
+      "ellipsoid": "GRS80",
+      "operation_proj_pipeline": "+proj=pipeline +step +proj=unitconvert +xy_in=deg +xy_out=rad +step +proj=aeqd +lat_0=39.754953704278655 +lon_0=-105.21995370310027 +ellps=GRS80 +x_0=0 +y_0=0",
+      "projected_axis_order": "easting_northing",
+      "projection_method": "ellipsoidal_azimuthal_equidistant",
+      "projection_wkt2": "PROJCRS[\"unknown\",BASEGEOGCRS[\"unknown\",DATUM[\"North American Datum 1983\",ELLIPSOID[\"GRS 1980\",6378137,298.257222101,LENGTHUNIT[\"metre\",1]],ID[\"EPSG\",6269]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8901]]],CONVERSION[\"unknown\",METHOD[\"Azimuthal Equidistant\",ID[\"EPSG\",1125]],PARAMETER[\"Latitude of natural origin\",39.7549537042787,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8801]],PARAMETER[\"Longitude of natural origin\",-105.2199537031,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8802]],PARAMETER[\"False easting\",0,LENGTHUNIT[\"metre\",1],ID[\"EPSG\",8806]],PARAMETER[\"False northing\",0,LENGTHUNIT[\"metre\",1],ID[\"EPSG\",8807]]],CS[Cartesian,2],AXIS[\"(E)\",east,ORDER[1],LENGTHUNIT[\"metre\",1,ID[\"EPSG\",9001]]],AXIS[\"(N)\",north,ORDER[2],LENGTHUNIT[\"metre\",1,ID[\"EPSG\",9001]]]]",
+      "realization_epoch": "unspecified_by_source_metadata",
+      "source_axis_order": "longitude_latitude",
+      "source_crs": "EPSG:4269",
+      "unit": "metre"
+    },
+    "origin": {
+      "height_navd88_m": 1729.523193359375,
+      "latitude_deg": 39.754953704278655,
+      "longitude_deg": -105.21995370310027,
+      "source_column": 8430,
+      "source_product_id": "USGS 1/3 Arc Second n40w106 20260630",
+      "source_raster_sha256": "2a2ac1c4e0e571e5734bafff2b47f0b5cd864ddcb45b69085f0fbad86d44b4ba",
+      "source_row": 2652
+    },
+    "vertical": {
+      "datum": "NAVD88",
+      "height_type": "orthometric",
+      "local_up_expression": "H-H0",
+      "unit": "metre"
+    }
+  },
+  "frame_definition_sha256": "3059daecf5eba37d0e4f2b12dc4468cf45d9d122b42db44cff7059357d0e94f7",
+  "generation": {
+    "created_utc": "2026-10-29T20:46:57Z",
+    "resampling": "none",
+    "source_window": {
+      "column_offset": 8214,
+      "columns": 217,
+      "row_offset": 2544,
+      "rows": 216
+    },
+    "tool_versions": {
+      "gdal": "3.12.2",
+      "proj": "9.7.1",
+      "python": "3.12.10",
+      "rasterio": "1.5.2"
+    }
+  },
+  "grid": {
+    "columns": 217,
+    "projected_sample_bounds_m": {
+      "crs": "regional_frame",
+      "easting_max": 0.0,
+      "easting_min": -1714.2119027677074,
+      "frame_id": "wf-vs01:golden-grs80-aeqd",
+      "meaning": "sample_centres",
+      "northing_max": 1110.4915224630213,
+      "northing_min": -1100.0177830453054
+    },
+    "region_id": "wf-vs01:golden-front-range",
+    "resampling": "none",
+    "rows": 216,
+    "sample_order": "row_major_north_to_south_west_to_east",
+    "sample_stride": 1,
+    "source_pixel_footprint_bounds": {
+      "crs": "EPSG:4269",
+      "east_deg": -105.21990740680388,
+      "meaning": "outer_pixel_edges",
+      "north_deg": 39.76500000058576,
+      "south_deg": 39.74500000056424,
+      "west_deg": -105.23999999943614
+    },
+    "source_window": {
+      "column_offset": 8214,
+      "columns": 217,
+      "row_offset": 2544,
+      "rows": 216
+    }
+  },
+  "payloads": {
+    "height_samples": {
+      "byte_length": 187488,
+      "encoding": "ieee754_binary32_le_metres",
+      "path": "height_samples.f32le",
+      "sha256": "d362ac74acbf8480e8e4ce59722b7c55ed6d0c80d3db4ef03c88f253c61e1744"
+    },
+    "horizontal_xy": {
+      "byte_length": 749952,
+      "encoding": "ieee754_binary64_le_easting_northing_pairs",
+      "path": "horizontal_xy.f64le",
+      "sha256": "88d8ad5e760d604aa058461259ff15ce05633fd78611daf831d28b33802cc8fc"
+    }
+  },
+  "producer": {
+    "commit": "fc9ff8a605de4cc167a2885eba4c720acd40e92e",
+    "name": "WorldForge Terrain Grid Producer",
+    "version": "1.0.0"
+  },
+  "source": {
+    "acquired_at_utc": "2026-10-29T13:41:19Z",
+    "acquisition_time_basis": "recorded_download_receipt",
+    "dataset": "3D Elevation Program (3DEP), 1/3 arc-second bare-earth elevation",
+    "metadata": {
+      "byte_length": 12962,
+      "sha256": "a43163a50c480a0ac50573a9fe4b9d50e6469ed317edf5399d4bf04ea2de28c7",
+      "uri": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/1-3_arc-second/UT_COUTAML_D24/USGS_13_n40w106_20260630.xml"
+    },
+    "product_date": "2026-07-01",
+    "product_id": "USGS 1/3 Arc Second n40w106 20260630",
+    "product_record": {
+      "byte_length": 2707,
+      "sha256": "9cbbb36df1333b8636521eefdab35b2e8040bff216ae774dd0e2627a5e92195f",
+      "uri": "https://www.sciencebase.gov/catalog/item/6a471a0d1ba49bcdf785e0fa"
+    },
+    "product_title": "USGS 1/3 Arc Second n40w106 20260630",
+    "provider": "U.S. Geological Survey (USGS)",
+    "raster": {
+      "affine": {
+        "pixel_height": -9.259259269220167e-05,
+        "pixel_width": 9.25925927753796e-05,
+        "rotation_x": 0.0,
+        "rotation_y": 0.0,
+        "x_origin": -106.00055555649311,
+        "y_origin": 40.000555556394715
+      },
+      "band": 1,
+      "byte_length": 413480184,
+      "dtype": "float32",
+      "ellipsoid": "GRS80",
+      "height": 10812,
+      "horizontal_crs": "EPSG:4269",
+      "horizontal_datum": "NAD83",
+      "nodata_value": -999999.0,
+      "offset": 0,
+      "pixel_interpretation": "area",
+      "realization_epoch": "unspecified_by_source_metadata",
+      "scale": 1,
+      "sha256": "2a2ac1c4e0e571e5734bafff2b47f0b5cd864ddcb45b69085f0fbad86d44b4ba",
+      "vertical_datum": "NAVD88",
+      "vertical_height_type": "orthometric",
+      "vertical_unit": "metre",
+      "width": 10812
+    },
+    "rights_statement": "USGS 3DEP source elevation data are public-domain U.S. Government data. Attribution: U.S. Geological Survey (USGS), USGS 1/3 Arc Second n40w106 20260630. This statement applies only to the identified source product and does not clear other datasets or assets.",
+    "snapshot_verified_date": "2026-10-29",
+    "source_uri": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/13/TIFF/historical/n40w106/USGS_13_n40w106_20260630.tif",
+    "uncertainty_statement": "The source XML disclaims an accuracy warranty and gives no tile-specific accuracy bound. The product is a 1/3 arc-second DEM with NAVD88 orthometric metres; source product dates are not per-pixel survey dates. The source metadata does not identify a NAD83 realization or epoch."
+  }
+}
