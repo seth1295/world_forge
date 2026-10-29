@@ -1,0 +1,677 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:worldforge:contract:road-centerlines:1.0.0:schema",
+  "title": "WorldForge regional road/path centerline interchange v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "contract_id",
+    "schema_version",
+    "feature_type",
+    "coordinate_space",
+    "frame",
+    "frame_definition_sha256",
+    "terrain_support",
+    "source",
+    "clip_extent",
+    "geometry_semantics",
+    "resampling",
+    "generation",
+    "features",
+    "selection"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "https://json-schema.org/draft/2020-12/schema"
+    },
+    "contract_id": {
+      "const": "urn:worldforge:contract:road-centerlines:1.0.0"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "feature_type": {
+      "const": "road_path_centerline"
+    },
+    "coordinate_space": {
+      "$ref": "#/$defs/coordinateSpace"
+    },
+    "frame": {
+      "type": "object",
+      "required": ["frame_id", "horizontal", "vertical", "origin"]
+    },
+    "frame_definition_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "terrain_support": {
+      "$ref": "#/$defs/terrainSupport"
+    },
+    "source": {
+      "$ref": "#/$defs/source"
+    },
+    "clip_extent": {
+      "$ref": "#/$defs/clipExtent"
+    },
+    "geometry_semantics": {
+      "$ref": "#/$defs/geometrySemantics"
+    },
+    "resampling": {
+      "$ref": "#/$defs/resampling"
+    },
+    "generation": {
+      "$ref": "#/$defs/generation"
+    },
+    "features": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 500,
+      "items": {
+        "$ref": "#/$defs/feature"
+      }
+    },
+    "selection": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["LINEARID", "FULLNAME", "RTTYP", "MTFCC"],
+        "properties": {
+          "LINEARID": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 22
+          },
+          "FULLNAME": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "RTTYP": {
+            "type": "string",
+            "maxLength": 1
+          },
+          "MTFCC": {
+            "type": "string",
+            "pattern": "^[A-Z0-9]{5}$"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "coordinateSpace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "frame_id",
+        "source_crs",
+        "source_axis_order",
+        "horizontal_datum",
+        "ellipsoid",
+        "realization_epoch",
+        "projection_method",
+        "projection_wkt2",
+        "operation_proj_pipeline",
+        "projected_axis_order",
+        "units",
+        "dimensions"
+      ],
+      "properties": {
+        "kind": {
+          "const": "regional_projected"
+        },
+        "frame_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "source_crs": {
+          "const": "EPSG:4269"
+        },
+        "source_axis_order": {
+          "const": "longitude_latitude"
+        },
+        "horizontal_datum": {
+          "const": "NAD83"
+        },
+        "ellipsoid": {
+          "const": "GRS80"
+        },
+        "realization_epoch": {
+          "const": "unspecified_by_source_metadata"
+        },
+        "projection_method": {
+          "const": "ellipsoidal_azimuthal_equidistant"
+        },
+        "projection_wkt2": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8192
+        },
+        "operation_proj_pipeline": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "projected_axis_order": {
+          "const": "easting_northing"
+        },
+        "units": {
+          "const": "metre"
+        },
+        "dimensions": {
+          "const": 2
+        }
+      }
+    },
+    "terrainSupport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_id",
+        "artifact_id",
+        "frame_definition_sha256",
+        "frame_id",
+        "source_product_id",
+        "source_raster_sha256",
+        "sample_grid_rows",
+        "sample_grid_columns",
+        "row_column_hint_semantics",
+        "surface_interpolation",
+        "height_datum",
+        "height_type",
+        "height_units",
+        "local_up_expression"
+      ],
+      "properties": {
+        "contract_id": {
+          "const": "urn:worldforge:contract:terrain-grid:1.0.0"
+        },
+        "artifact_id": {
+          "$ref": "#/$defs/sha256"
+        },
+        "frame_definition_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "frame_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "source_product_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "source_raster_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "sample_grid_rows": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 4096
+        },
+        "sample_grid_columns": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 4096
+        },
+        "row_column_hint_semantics": {
+          "const": "fractional indices relative to pixel-centre sample grid, row then column"
+        },
+        "surface_interpolation": {
+          "const": "Terrain Grid v1 triangle mesh using the NW-SE cell diagonal"
+        },
+        "height_datum": {
+          "const": "NAVD88"
+        },
+        "height_type": {
+          "const": "orthometric"
+        },
+        "height_units": {
+          "const": "metre"
+        },
+        "local_up_expression": {
+          "const": "H-H0"
+        }
+      }
+    },
+    "componentHash": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["byte_length", "sha256"],
+      "properties": {
+        "byte_length": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8000000
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "dataset",
+        "title",
+        "geography",
+        "geography_fips",
+        "vintage",
+        "release_date",
+        "feature_updates_through",
+        "source_uri",
+        "archive_byte_length",
+        "archive_sha256",
+        "component_hashes",
+        "source_crs_wkt",
+        "source_coordinates",
+        "accuracy_statement",
+        "rights_and_attribution",
+        "conspicuous_trademark_disclaimer"
+      ],
+      "properties": {
+        "provider": {
+          "const": "U.S. Census Bureau"
+        },
+        "dataset": {
+          "const": "TIGER/Line 2026 All Roads, county-based shapefile"
+        },
+        "title": {
+          "const": "TIGER/Line Shapefile, 2026, County, Jefferson County, CO, All Roads"
+        },
+        "geography": {
+          "const": "Jefferson County, Colorado"
+        },
+        "geography_fips": {
+          "const": "08059"
+        },
+        "vintage": {
+          "const": 2026
+        },
+        "release_date": {
+          "const": "2026-10-14"
+        },
+        "feature_updates_through": {
+          "const": "2026-07"
+        },
+        "source_uri": {
+          "const": "https://www2.census.gov/geo/tiger/TIGER2026/ROADS/tl_2026_08059_roads.zip",
+          "format": "uri"
+        },
+        "archive_byte_length": {
+          "const": 2842936
+        },
+        "archive_sha256": {
+          "const": "d0063402ae35789546fbfc3041320aeb139d3b82845d8ca9ab1869dd55df4001"
+        },
+        "component_hashes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tl_2026_08059_roads.cpg",
+            "tl_2026_08059_roads.dbf",
+            "tl_2026_08059_roads.prj",
+            "tl_2026_08059_roads.shp",
+            "tl_2026_08059_roads.shp.ea.iso.xml",
+            "tl_2026_08059_roads.shp.iso.xml",
+            "tl_2026_08059_roads.shx"
+          ],
+          "properties": {
+            "tl_2026_08059_roads.cpg": {
+              "$ref": "#/$defs/componentHash"
+            },
+            "tl_2026_08059_roads.dbf": {
+              "$ref": "#/$defs/componentHash"
+            },
+            "tl_2026_08059_roads.prj": {
+              "$ref": "#/$defs/componentHash"
+            },
+            "tl_2026_08059_roads.shp": {
+              "$ref": "#/$defs/componentHash"
+            },
+            "tl_2026_08059_roads.shp.ea.iso.xml": {
+              "$ref": "#/$defs/componentHash"
+            },
+            "tl_2026_08059_roads.shp.iso.xml": {
+              "$ref": "#/$defs/componentHash"
+            },
+            "tl_2026_08059_roads.shx": {
+              "$ref": "#/$defs/componentHash"
+            }
+          }
+        },
+        "source_crs_wkt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "source_coordinates": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "crs",
+            "axis_order",
+            "horizontal_datum",
+            "ellipsoid",
+            "realization_epoch",
+            "dimensions",
+            "vertical_datum",
+            "has_z",
+            "road_width_attribute"
+          ],
+          "properties": {
+            "crs": {
+              "const": "EPSG:4269"
+            },
+            "axis_order": {
+              "const": "longitude_latitude"
+            },
+            "horizontal_datum": {
+              "const": "NAD83"
+            },
+            "ellipsoid": {
+              "const": "GRS80"
+            },
+            "realization_epoch": {
+              "const": "unspecified_by_source_metadata"
+            },
+            "dimensions": {
+              "const": 2
+            },
+            "vertical_datum": {
+              "const": "none"
+            },
+            "has_z": {
+              "const": false
+            },
+            "road_width_attribute": {
+              "const": "absent"
+            }
+          }
+        },
+        "accuracy_statement": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "rights_and_attribution": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "conspicuous_trademark_disclaimer": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      }
+    },
+    "clipExtent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["crs", "axis_order", "units", "west", "south", "east", "north", "meaning"],
+      "properties": {
+        "crs": {
+          "const": "EPSG:4269"
+        },
+        "axis_order": {
+          "const": "longitude_latitude"
+        },
+        "units": {
+          "const": "degree"
+        },
+        "west": {
+          "const": -105.24
+        },
+        "south": {
+          "const": 39.745
+        },
+        "east": {
+          "const": -105.2
+        },
+        "north": {
+          "const": 39.765
+        },
+        "meaning": {
+          "const": "inclusive clip rectangle in source geographic coordinates"
+        }
+      }
+    },
+    "geometrySemantics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "shape",
+        "coordinate_values",
+        "source_height",
+        "source_width",
+        "drape_height",
+        "drape_is_measured_road_elevation",
+        "display_offset"
+      ],
+      "properties": {
+        "shape": {
+          "const": "MultiLineString2D"
+        },
+        "coordinate_values": {
+          "const": ["easting_m", "northing_m"]
+        },
+        "source_height": {
+          "const": "absent"
+        },
+        "source_width": {
+          "const": "absent"
+        },
+        "drape_height": {
+          "const": "sampled from the referenced Golden Terrain Grid v1 support surface"
+        },
+        "drape_is_measured_road_elevation": {
+          "const": false
+        },
+        "display_offset": {
+          "const": "applied by the diagnostic viewer after terrain sampling; not part of the feature coordinates"
+        }
+      }
+    },
+    "resampling": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "method",
+        "maximum_projected_chord_length_m",
+        "purpose",
+        "library_versions"
+      ],
+      "properties": {
+        "method": {
+          "const": "linear interpolation along source segment in EPSG:4269, then direct projection to the Golden frame"
+        },
+        "maximum_projected_chord_length_m": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 10000
+        },
+        "purpose": {
+          "const": "deterministic display tessellation only; adds no source positional detail or road width"
+        },
+        "library_versions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["python", "rasterio", "gdal", "proj"],
+          "properties": {
+            "python": {
+              "type": "string",
+              "pattern": "^3\\.12\\."
+            },
+            "rasterio": {
+              "const": "1.5.2"
+            },
+            "gdal": {
+              "const": "3.12.2"
+            },
+            "proj": {
+              "const": "9.7.1"
+            }
+          }
+        }
+      }
+    },
+    "generation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "producer",
+        "version",
+        "source_record_count",
+        "clipped_feature_count",
+        "resampled_point_count",
+        "source_record_index_semantics",
+        "deterministic_output"
+      ],
+      "properties": {
+        "producer": {
+          "const": "WorldForge Roads Feature Producer"
+        },
+        "version": {
+          "const": "1.0.0"
+        },
+        "source_record_count": {
+          "const": 14997
+        },
+        "clipped_feature_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500
+        },
+        "resampled_point_count": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 100000
+        },
+        "source_record_index_semantics": {
+          "const": "zero-based DBF/SHP record order in the official county archive"
+        },
+        "deterministic_output": {
+          "const": true
+        }
+      }
+    },
+    "xy": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "number"
+      }
+    },
+    "gridHint": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "number"
+      }
+    },
+    "point": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_lon_lat_deg", "local_xy_m", "terrain_grid_rc_hint"],
+      "properties": {
+        "source_lon_lat_deg": {
+          "$ref": "#/$defs/xy"
+        },
+        "local_xy_m": {
+          "$ref": "#/$defs/xy"
+        },
+        "terrain_grid_rc_hint": {
+          "$ref": "#/$defs/gridHint"
+        }
+      }
+    },
+    "feature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "source_record_index", "feature_type", "properties", "geometry"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 22
+        },
+        "source_record_index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 250000
+        },
+        "feature_type": {
+          "const": "road_path_centerline"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["LINEARID", "FULLNAME", "RTTYP", "MTFCC"],
+          "properties": {
+            "LINEARID": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 22
+            },
+            "FULLNAME": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "RTTYP": {
+              "type": "string",
+              "maxLength": 1
+            },
+            "MTFCC": {
+              "type": "string",
+              "pattern": "^[A-Z0-9]{5}$"
+            }
+          }
+        },
+        "geometry": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "paths"],
+          "properties": {
+            "type": {
+              "const": "MultiLineString2D"
+            },
+            "paths": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 500,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["points"],
+                "properties": {
+                  "points": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 100000,
+                    "items": {
+                      "$ref": "#/$defs/point"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

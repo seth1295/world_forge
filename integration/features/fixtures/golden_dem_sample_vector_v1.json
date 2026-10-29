@@ -1,0 +1,22 @@
+{
+  "fixture_id": "golden-terrain-grid-sample-v1",
+  "fixture_only": true,
+  "frame_id": "wf-vs01:golden-grs80-aeqd",
+  "h0_navd88_m": 1729.523193359375,
+  "height_navd88_m": 1733.6090087890625,
+  "local_up_m": 4.0858154296875,
+  "local_xy_m": [
+    -523.6888073482423,
+    339.27606143183147
+  ],
+  "notice": "A test road-coordinate pair, not a Census road feature.",
+  "source_crs": "EPSG:4269",
+  "source_lon_lat_deg": [
+    -105.22606481422345,
+    39.75800925983749
+  ],
+  "source_raster_column": 8364,
+  "source_raster_row": 2619,
+  "terrain_grid_column": 150,
+  "terrain_grid_row": 75
+}
