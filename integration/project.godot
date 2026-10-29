@@ -1,0 +1,8 @@
+config_version=5
+
+[application]
+config/name="WorldForge Terrain Consumer"
+run/main_scene="res://scenes/terrain_viewer.tscn"
+
+[rendering]
+renderer/rendering_method="forward_plus"
