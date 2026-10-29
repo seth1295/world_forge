@@ -1,2 +1,7 @@
 # Local orchestration prompts ? never publish
 /Prompts/
+
+# Generated Godot editor cache for the integration project.
+/integration/.godot/
+# Agent Vision scratch; reviewable captures are copied under docs/preproduction/evidence.
+.gdskills/

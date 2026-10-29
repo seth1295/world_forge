@@ -1,7 +1,7 @@
 # WF-VS-01: Real Terrain Grid to Godot
 
 **Decision owner:** WorldForge Main Lead  
-**Status:** Selected as the first vertical-slice experiment; Gate A source/build evidence is assembled and awaiting independent review.  
+**Status:** Gate A and generator PRs #1 and #2 are merged. The Gate B/C parent consumer now has two-site runtime and functional test evidence; independent Gate C review and QA verdict remain pending.
 **Scope:** Pre-production technical demonstration only; no gameplay.
 
 ## Experiment
@@ -36,7 +36,7 @@ The vertical sample remains NAVD88 orthometric metres. Set `H0` to the recorded 
 
 The acquired metadata does not name a NAD83 realization or epoch. Do not apply GEOID18 or silently turn NAVD88 values into ellipsoidal height: NGS restricts GEOID18 to NAD83(2011) epoch 2010.0 ellipsoid heights. WF-VS-01 may prove regionally positioned terrain in its declared source frame, while global WGS84/ECEF placement remains unproven until the source realization and a compatible horizontal/vertical operation are established. Test the global spatial model separately with fully specified independent reference fixtures. This regional slice alone cannot close WF-EXIT-05.
 
-The exact manifest, binary framing, data types, coordinate/datum fields and lifecycle contract are Gate B decisions. They must preserve source metadata and reject malformed, incompatible or stale data; do not implement an undocumented ad-hoc format.
+Gate B specified the manifest, binary framing, data types, coordinate/datum fields and lifecycle contract in the parent terrain schema and `terrain-grid-contract.md`. The parent Godot consumer now rejects malformed, incompatible or stale data before geometry allocation; preserve source metadata and do not introduce an undocumented ad-hoc format.
 
 ## Why this slice
 
@@ -52,6 +52,16 @@ It tests the mission's critical dependency chain in the fewest components while 
 6. **Functional streaming:** Exercise async request/loading, readiness before terrain/collision use where applicable, adjacent tile/LOD transitions, stale completion after unload or relocation, repeated load/unload/revisit, input or generation failure, recovery and shutdown. Record ownership and resource cleanup. These are correctness tests, not efficiency tests.
 7. **Geographic coverage:** The production logic is not location-hardcoded. Test at least two separated real-data regions and independent reference coordinates in their declared source frames. Also test the separate global coordinate model against fully specified fixtures at large magnitudes, differing latitudes, longitude wrap/antimeridian and polar or other edge cases as applicable; real terrain data need not cover those synthetic-reference cases.
 8. **Rights:** Keep USGS source metadata and attribution with the local evidence bundle. Audit code and any other data sources separately. No uncleared imagery, map data or third-party assets may be substituted to improve the screenshot.
+
+## Gate C consumer verification (2026-10-30)
+
+**Status:** The Gate B/C parent consumer is implemented in the isolated integration worktree and has actual-build test and runtime evidence. The feature branch is rebased onto parent main `75ff6fd382c8470d57117c76654073352e114077` and now pins `worldgen/beamng-earth` to `6d4cf589a278b5e2eea668c25bc43469f4d45791`. The checked-in manifests still name the earlier producer commit `635c250cc251d72724edeb4d338240f1344a8c91`; the hardening replay produced identical bundles. Gate C independent review/reproduction and PR approval remain pending.
+
+**Pinned inputs:** Parent Godot gitlink `d7339113911696eac113d77df633c6a2571f1ec0`. The binary used was Godot `4.8.beta.double.custom_build.d73391139`, SHA-256 `FEE4AE8EA772111CE72F2B20F21DC2258C97926B989AA8E2092D337CE28E246B`. The terrain schema is `urn:worldforge:contract:terrain-grid:1.0.0`, Git blob `87b1423220043d19de9585bae770812f104e3715`, SHA-256 `EFAA9F53E3EF7FEB1C5B3259730EF82E440540050D7A6E7EDDD5569D9E53EA7A`. The consumer manifests identify the producer commit `635c250cc251d72724edeb4d338240f1344a8c91`, which generated the checked-in bundles. The feature branch pins the merged generator hardening revision `6d4cf589a278b5e2eea668c25bc43469f4d45791`; Main Lead reports a 9/9 hardening suite against both real output bundles and an identical replay. Parent main base is `75ff6fd382c8470d57117c76654073352e114077`.
+
+**Passing evidence:** The actual Windows Godot build loaded and rendered the Baltimore and Golden bundles. The consumer's final focused suite reports `WF_TERRAIN_TEST_RESULT=PASS checks=137 failures=0`; it covers strict manifest/path/hash/size/source/frame/artifact checks before geometry allocation, real payload hashes, WGS 84 reference vectors, two-origin rebase reconstruction, mesh/collision correspondence, upward ray hits, one-worker plus one replaceable latest request, rapid-toggle stale discard, unload/reload and scene shutdown. Maximum observed ECEF rebase arithmetic error was `0.000000000276 m` against a `1 mm` numeric threshold. Runtime images are [`terrain-baltimore.webp`](evidence/terrain-baltimore.webp) and [`terrain-golden.webp`](evidence/terrain-golden.webp); exact local reproduction commands, camera poses, bundle hashes and limitations are in [`consumer-handoff.md`](consumer-handoff.md). The final test log is [`terrain-consumer-tests.log`](evidence/terrain-consumer-tests.log).
+
+**Visual result and limits:** Each viewport capture shows the selected site, source-grid dimensions, geographic anchor, frame identity and artifact prefix. Golden terrain relief is clearly visible; Baltimore's low-relief surface is subtle at the ground-level overview, so the close-camera attempt was not retained. The viewer supports approved-site switching and unloading. It does not demonstrate adjacent-tile seams, LOD transitions or production-wide streaming. The WGS 84 ellipsoid utility is separate from the terrain path; no NAD83/NAVD88 to WGS 84 or geoid bridge is implemented. No source/geographic accuracy claim follows from the conversion tolerances. Independent Gate C QA is still pending.
 
 ## Not proven by this experiment alone
 
