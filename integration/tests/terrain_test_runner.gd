@@ -75,6 +75,10 @@ func _run_contract_tests() -> void:
             continue
         _decoded_by_site[site_id] = decoded
         var site: Dictionary = decoded["site"]
+        var window_ids := SiteCatalog.window_ids(site_id)
+        _check(window_ids.has(String(site["window_id"])) and window_ids.size() == 1, "%s exposes the active default window ID from its window catalog" % site_id)
+        var selected_window := SiteCatalog.get_window(site_id, String(site["window_id"]))
+        _check(selected_window.get("frame_id") == site.get("frame_id") and selected_window.get("source") == site.get("source"), "%s window lookup inherits the approved shared source and frame" % site_id)
         var manifest: Dictionary = decoded["manifest"]
         _check(decoded["artifact_id"] == site["artifact_id"], "%s artifact ID matches the requested site" % site_id)
         _check(manifest["frame"]["frame_id"] == site["frame_id"], "%s frame ID matches the approved regional frame" % site_id)
@@ -98,6 +102,23 @@ func _run_contract_tests() -> void:
         bad_source["source"]["raster"]["sha256"] = "0000000000000000000000000000000000000000000000000000000000000000"
         var bad_source_result := ContractV1.validate_manifest(bad_source, _schema, site)
         _check(not bad_source_result.get("ok", false), "%s rejects source raster identity not in the site allowlist" % site_id)
+        var affine_delta := 0.001
+        var bad_affine_footprint: Dictionary = manifest.duplicate(true)
+        var tampered_raster: Dictionary = bad_affine_footprint["source"]["raster"]
+        var tampered_affine: Dictionary = tampered_raster["affine"]
+        tampered_affine["x_origin"] = float(tampered_affine["x_origin"]) + affine_delta
+        var tampered_footprint: Dictionary = bad_affine_footprint["grid"]["source_pixel_footprint_bounds"]
+        tampered_footprint["west_deg"] = float(tampered_footprint["west_deg"]) + affine_delta
+        tampered_footprint["east_deg"] = float(tampered_footprint["east_deg"]) + affine_delta
+        var affine_result := ContractV1.validate_manifest(bad_affine_footprint, _schema, site)
+        var affine_error := String(affine_result.get("error", ""))
+        _check(not affine_result.get("ok", false) and affine_error.contains("source.raster.affine.x_origin"), "%s rejects a mutated raster affine even when footprint bounds are adjusted to remain consistent" % site_id)
+
+        var bad_nodata: Dictionary = manifest.duplicate(true)
+        bad_nodata["source"]["raster"]["nodata_value"] = -999998.0
+        var nodata_result := ContractV1.validate_manifest(bad_nodata, _schema, site)
+        var nodata_error := String(nodata_result.get("error", ""))
+        _check(not nodata_result.get("ok", false) and nodata_error.contains("source.raster.nodata_value"), "%s rejects a mutated source raster no-data value" % site_id)
 
         var bad_rights: Dictionary = manifest.duplicate(true)
         bad_rights["source"]["rights_statement"] = "unapproved source rights"
@@ -130,9 +151,27 @@ func _run_contract_tests() -> void:
         var length_result := ContractV1.validate_dimensions_and_files(bad_length)
         _check(not length_result.get("ok", false), "%s rejects payload length inconsistent with dimensions" % site_id)
 
+    _run_catalog_window_design_tests()
     _run_tampered_payload_test()
     _run_bounded_read_tests()
 
+func _run_catalog_window_design_tests() -> void:
+    var shared_source: Dictionary = {"product_id": "USGS shared raster", "raster": {"sha256": "628fd3bd2b2de7e36d37f7a28050db9f34bc73a7b9a8f77f54a488ec8ce757d0"}}
+    var site_definition: Dictionary = {
+        "site_id": "window-catalog-fixture",
+        "frame_id": "wf-fixture:shared-frame",
+        "source": shared_source,
+        "windows": {
+            "west": {"bundle_directory": "fixture-west", "artifact_id": "west-window-artifact", "source_window": {"row_offset": 100, "column_offset": 200}},
+            "east": {"bundle_directory": "fixture-east", "artifact_id": "east-window-artifact", "source_window": {"row_offset": 100, "column_offset": 416}}
+        }
+    }
+    var west_window := SiteCatalog.make_window_record(site_definition, "west")
+    var east_window := SiteCatalog.make_window_record(site_definition, "east")
+    _check(not west_window.is_empty() and not east_window.is_empty(), "site catalog resolves more than one window record")
+    _check(west_window.get("frame_id") == east_window.get("frame_id") and west_window.get("source") == east_window.get("source"), "adjacent-window records inherit one shared source-raster and frame identity")
+    _check(west_window.get("artifact_id") != east_window.get("artifact_id") and west_window.get("source_window") != east_window.get("source_window"), "adjacent-window records retain distinct artifact and source-window identity")
+    _check(SiteCatalog.make_window_record(site_definition, "unknown").is_empty(), "site catalog rejects an unknown window ID")
 func _run_bounded_read_tests() -> void:
     var horizontal_path := _repository_root.path_join("integration/assets/terrain/baltimore/horizontal_xy.f64le")
     var too_large := Decoder._read_bounded_file(horizontal_path, ContractV1.MAX_HORIZONTAL_BYTES + 1, ContractV1.MAX_HORIZONTAL_BYTES, "0000000000000000000000000000000000000000000000000000000000000000")
@@ -153,6 +192,13 @@ func _run_tampered_payload_test() -> void:
     var original_schema := FileAccess.get_file_as_bytes(_repository_root.path_join("contracts/terrain_grid_v1.schema.json"))
     _write_bytes(schema_destination, original_schema)
     var source_directory := _repository_root.path_join("integration/assets/terrain/baltimore")
+    var source_manifest_bytes := FileAccess.get_file_as_bytes(source_directory.path_join("manifest.json"))
+    var source_manifest_result := StrictJson.new().parse_bytes(source_manifest_bytes)
+    if not source_manifest_result.get("ok", false):
+        _check(false, "real Baltimore manifest is available for deterministic metadata tampering tests")
+        _remove_negative_fixture_tree(fixture_root)
+        return
+    var original_manifest: Dictionary = source_manifest_result["value"]
     for filename in ["manifest.json", "horizontal_xy.f64le", "height_samples.f32le"]:
         var bytes := FileAccess.get_file_as_bytes(source_directory.path_join(filename))
         if filename == "horizontal_xy.f64le" and not bytes.is_empty():
@@ -163,7 +209,30 @@ func _run_tampered_payload_test() -> void:
     var tampered_result: Dictionary = tampered_decoder.result
     _check(not tampered_result.get("ok", false) and String(tampered_result.get("error", "")).contains("SHA-256"), "consumer rejects payload bytes that do not match the manifest SHA-256")
     _check(not tampered_result.has("vertices"), "invalid payload is rejected before terrain geometry allocation")
-    _check(_remove_negative_fixture_tree(fixture_root), "negative payload fixture files and directories are removed after verification")
+
+    var source_manifest_text := source_manifest_bytes.get_string_from_utf8()
+    var affine_manifest_text := source_manifest_text
+    affine_manifest_text = affine_manifest_text.replace("\"x_origin\": -77.00055555599346", "\"x_origin\": -76.99955555599346")
+    affine_manifest_text = affine_manifest_text.replace("\"west_deg\": -76.6200000000285", "\"west_deg\": -76.6190000000285")
+    affine_manifest_text = affine_manifest_text.replace("\"east_deg\": -76.60000000000699", "\"east_deg\": -76.59900000000699")
+    _write_bytes(bundle_destination.path_join("manifest.json"), affine_manifest_text.to_utf8_buffer())
+    var affine_decoder := Decoder.new()
+    affine_decoder.decode(site_id, fixture_root)
+    var affine_decode_result: Dictionary = affine_decoder.result
+    var affine_decode_error := String(affine_decode_result.get("error", ""))
+    _check(not affine_decode_result.get("ok", false) and affine_decode_error.contains("source.raster.affine.x_origin"), "decoder rejects affine-and-footprint tampering before payload loading: %s" % affine_decode_error)
+    _check(not affine_decode_result.has("vertices"), "affine-and-footprint mismatch is rejected before geometry allocation")
+
+    var nodata_manifest_text := source_manifest_text.replace("\"nodata_value\": -999999.0", "\"nodata_value\": -999998.0")
+    _write_bytes(bundle_destination.path_join("manifest.json"), nodata_manifest_text.to_utf8_buffer())
+    var nodata_decoder := Decoder.new()
+    nodata_decoder.decode(site_id, fixture_root)
+    var nodata_decode_result: Dictionary = nodata_decoder.result
+    var nodata_decode_error := String(nodata_decode_result.get("error", ""))
+    _check(not nodata_decode_result.get("ok", false) and nodata_decode_error.contains("source.raster.nodata_value"), "decoder rejects no-data tampering before payload loading: %s" % nodata_decode_error)
+    _check(not nodata_decode_result.has("vertices"), "no-data mismatch is rejected before geometry allocation")
+
+    _check(_remove_negative_fixture_tree(fixture_root), "negative source and payload fixture files and directories are removed after verification")
 
 func _run_geodetic_tests() -> void:
     # Fixed vectors were generated independently by Rasterio/GDAL/PROJ; see the reference note.

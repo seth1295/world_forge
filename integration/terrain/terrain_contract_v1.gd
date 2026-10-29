@@ -139,6 +139,12 @@ static func _validate_semantics(manifest: Dictionary, approved_site: Dictionary,
         return "region or frame does not match the approved site record"
     if int(grid["rows"]) != int(approved_site.get("rows", -1)) or int(grid["columns"]) != int(approved_site.get("columns", -1)):
         return "grid dimensions differ from the approved site record"
+    var expected_window: Dictionary = approved_site.get("source_window", {})
+    if expected_window.is_empty():
+        return "approved site window is missing source-window identity"
+    var window_mismatch := _first_value_mismatch(grid["source_window"], expected_window, "grid.source_window")
+    if not window_mismatch.is_empty():
+        return window_mismatch
     if int(origin["source_row"]) != int(approved_site.get("anchor_row", -1)) or int(origin["source_column"]) != int(approved_site.get("anchor_column", -1)):
         return "frame anchor indices differ from the approved site record"
     if not _same_number(origin["longitude_deg"], approved_site.get("anchor_longitude_deg", INF)) or not _same_number(origin["latitude_deg"], approved_site.get("anchor_latitude_deg", INF)):
@@ -149,17 +155,9 @@ static func _validate_semantics(manifest: Dictionary, approved_site: Dictionary,
     var expected_source: Dictionary = approved_site.get("source", {})
     if expected_source.is_empty():
         return "approved site record is missing source identity"
-    for key in expected_source:
-        var expected_value: Variant = expected_source[key]
-        if typeof(expected_value) == TYPE_DICTIONARY:
-            var actual_section: Variant = source.get(key, {})
-            if typeof(actual_section) != TYPE_DICTIONARY:
-                return "source.%s is not an object" % key
-            for subkey in expected_value:
-                if not actual_section.has(subkey) or actual_section[subkey] != expected_value[subkey]:
-                    return "source.%s.%s differs from approved site record" % [key, subkey]
-        elif not source.has(key) or source[key] != expected_value:
-            return "source.%s differs from approved site record" % key
+    var source_mismatch := _first_value_mismatch(source, expected_source, "source")
+    if not source_mismatch.is_empty():
+        return source_mismatch
 
     var expected_producer: Dictionary = approved_site.get("producer", {})
     if expected_producer.is_empty():
@@ -191,6 +189,27 @@ static func _validate_semantics(manifest: Dictionary, approved_site: Dictionary,
         return "regional v1 projection WKT may not substitute WGS84"
     return ""
 
+static func _first_value_mismatch(actual: Variant, expected: Variant, path: String) -> String:
+    if typeof(expected) == TYPE_DICTIONARY:
+        if typeof(actual) != TYPE_DICTIONARY:
+            return "%s is not an object" % path
+        var actual_dictionary: Dictionary = actual
+        var expected_dictionary: Dictionary = expected
+        for key in expected_dictionary:
+            var key_name := String(key)
+            if not actual_dictionary.has(key):
+                return "%s.%s is missing from the manifest" % [path, key_name]
+            var nested_mismatch := _first_value_mismatch(actual_dictionary[key], expected_dictionary[key], "%s.%s" % [path, key_name])
+            if not nested_mismatch.is_empty():
+                return nested_mismatch
+        return ""
+    if typeof(expected) == TYPE_ARRAY:
+        if typeof(actual) != TYPE_ARRAY or actual != expected:
+            return "%s differs from approved site record" % path
+        return ""
+    if actual != expected:
+        return "%s differs from approved site record" % path
+    return ""
 static func _has_token(text: String, token: String) -> bool:
     return text.split(" ", false).has(token)
 

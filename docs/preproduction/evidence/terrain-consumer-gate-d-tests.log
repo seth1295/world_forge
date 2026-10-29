@@ -1,0 +1,160 @@
+Godot Engine v4.8.beta.double.custom_build.d73391139 (2026-10-29 07:26:32 UTC) - https://godotengine.org
+
+WF_TERRAIN_TEST_SUITE=all
+PASS  parent terrain schema parses with strict JSON
+PASS  strict JSON rejects duplicate object keys
+PASS  strict JSON rejects duplicate keys after escape decoding
+PASS  strict JSON enforces the manifest byte limit
+PASS  baltimore real producer bundle validates
+PASS  baltimore exposes the active default window ID from its window catalog
+PASS  baltimore window lookup inherits the approved shared source and frame
+PASS  baltimore artifact ID matches the requested site
+PASS  baltimore frame ID matches the approved regional frame
+PASS  baltimore geometry vertex count matches grid sample count
+PASS  baltimore render indices and collision triangles have equal lengths
+PASS  baltimore anchor sample maps to the local origin with H-H0 = 0
+PASS  baltimore retains NAD83 and NAVD88 local-frame semantics
+PASS  baltimore rejects unknown global-position manifest fields
+PASS  baltimore rejects a traversal payload path before file access
+PASS  baltimore rejects source raster identity not in the site allowlist
+PASS  baltimore rejects a mutated raster affine even when footprint bounds are adjusted to remain consistent
+PASS  baltimore rejects a mutated source raster no-data value
+PASS  baltimore rejects source-rights text not pinned in its approved record
+PASS  baltimore rejects a canonical frame hash mismatch
+PASS  baltimore rejects a canonical artifact hash mismatch
+PASS  baltimore rejects a stale expected artifact ID
+PASS  baltimore rejects dimensions above the v1 sample cap before allocation
+PASS  baltimore rejects payload length inconsistent with dimensions
+PASS  golden real producer bundle validates
+PASS  golden exposes the active default window ID from its window catalog
+PASS  golden window lookup inherits the approved shared source and frame
+PASS  golden artifact ID matches the requested site
+PASS  golden frame ID matches the approved regional frame
+PASS  golden geometry vertex count matches grid sample count
+PASS  golden render indices and collision triangles have equal lengths
+PASS  golden anchor sample maps to the local origin with H-H0 = 0
+PASS  golden retains NAD83 and NAVD88 local-frame semantics
+PASS  golden rejects unknown global-position manifest fields
+PASS  golden rejects a traversal payload path before file access
+PASS  golden rejects source raster identity not in the site allowlist
+PASS  golden rejects a mutated raster affine even when footprint bounds are adjusted to remain consistent
+PASS  golden rejects a mutated source raster no-data value
+PASS  golden rejects source-rights text not pinned in its approved record
+PASS  golden rejects a canonical frame hash mismatch
+PASS  golden rejects a canonical artifact hash mismatch
+PASS  golden rejects a stale expected artifact ID
+PASS  golden rejects dimensions above the v1 sample cap before allocation
+PASS  golden rejects payload length inconsistent with dimensions
+PASS  site catalog resolves more than one window record
+PASS  adjacent-window records inherit one shared source-raster and frame identity
+PASS  adjacent-window records retain distinct artifact and source-window identity
+PASS  site catalog rejects an unknown window ID
+PASS  stale negative payload fixture is removed before recreation
+PASS  consumer rejects payload bytes that do not match the manifest SHA-256
+PASS  invalid payload is rejected before terrain geometry allocation
+PASS  decoder rejects affine-and-footprint tampering before payload loading: source.raster.affine.x_origin differs from approved site record
+PASS  affine-and-footprint mismatch is rejected before geometry allocation
+PASS  decoder rejects no-data tampering before payload loading: source.raster.nodata_value differs from approved site record
+PASS  no-data mismatch is rejected before geometry allocation
+PASS  negative source and payload fixture files and directories are removed after verification
+PASS  bounded payload reader rejects a declared size above cap before allocation
+PASS  bounded payload reader rejects an opened file with a changed byte length
+PASS  WGS 84 forward conversion accepts reference (0.0, 0.0)
+PASS  WGS 84 forward XYZ matches independent fixed reference within 0.1 mm
+PASS  WGS 84 inverse conversion accepts fixed global reference
+PASS  WGS 84 inverse coordinates round-trip reference point within declared test tolerance
+PASS  WGS 84 forward conversion accepts reference (0.0, 180.0)
+PASS  WGS 84 forward XYZ matches independent fixed reference within 0.1 mm
+PASS  WGS 84 inverse conversion accepts fixed global reference
+PASS  WGS 84 inverse coordinates round-trip reference point within declared test tolerance
+PASS  WGS 84 forward conversion accepts reference (90.0, 0.0)
+PASS  WGS 84 forward XYZ matches independent fixed reference within 0.1 mm
+PASS  WGS 84 inverse conversion accepts fixed global reference
+PASS  WGS 84 inverse coordinates round-trip reference point within declared test tolerance
+PASS  WGS 84 forward conversion accepts reference (-90.0, 0.0)
+PASS  WGS 84 forward XYZ matches independent fixed reference within 0.1 mm
+PASS  WGS 84 inverse conversion accepts fixed global reference
+PASS  WGS 84 inverse coordinates round-trip reference point within declared test tolerance
+PASS  WGS 84 forward conversion accepts reference (45.0, 45.0)
+PASS  WGS 84 forward XYZ matches independent fixed reference within 0.1 mm
+PASS  WGS 84 inverse conversion accepts fixed global reference
+PASS  WGS 84 inverse coordinates round-trip reference point within declared test tolerance
+PASS  WGS 84 forward conversion accepts reference (80.0, -179.5)
+PASS  WGS 84 forward XYZ matches independent fixed reference within 0.1 mm
+PASS  WGS 84 inverse conversion accepts fixed global reference
+PASS  WGS 84 inverse coordinates round-trip reference point within declared test tolerance
+PASS  WGS 84 forward conversion accepts reference (-60.0, 170.0)
+PASS  WGS 84 forward XYZ matches independent fixed reference within 0.1 mm
+PASS  WGS 84 inverse conversion accepts fixed global reference
+PASS  WGS 84 inverse coordinates round-trip reference point within declared test tolerance
+PASS  WGS 84 forward conversion accepts reference (0.0, 0.0)
+PASS  WGS 84 forward XYZ matches independent fixed reference within 0.1 mm
+PASS  WGS 84 inverse conversion accepts fixed global reference
+PASS  WGS 84 inverse coordinates round-trip reference point within declared test tolerance
+PASS  WGS 84 forward conversion rejects latitude outside bounds
+PASS  WGS 84 forward conversion rejects longitude outside bounds
+PASS  WGS 84 forward conversion rejects height below its bound
+PASS  WGS 84 forward conversion rejects height above its bound
+PASS  WGS 84 inverse conversion rejects the geocentric singularity
+PASS  WGS 84 inverse conversion rejects ECEF radius above its bound
+PASS  two distinct WGS 84 ECEF origins are established
+PASS  Baltimore-area WGS 84 test point reconstruction after ECEF origin 1 subtraction stays within 1 mm
+PASS  Baltimore-area WGS 84 test point reconstructs to valid WGS 84 geodetic coordinates
+PASS  Baltimore-area WGS 84 test point geodetic location is invariant across local origins within 1 mm numeric error
+PASS  Baltimore-area WGS 84 test point reconstruction after ECEF origin 2 subtraction stays within 1 mm
+PASS  Baltimore-area WGS 84 test point reconstructs to valid WGS 84 geodetic coordinates
+PASS  Baltimore-area WGS 84 test point geodetic location is invariant across local origins within 1 mm numeric error
+PASS  Golden-area WGS 84 test point reconstruction after ECEF origin 1 subtraction stays within 1 mm
+PASS  Golden-area WGS 84 test point reconstructs to valid WGS 84 geodetic coordinates
+PASS  Golden-area WGS 84 test point geodetic location is invariant across local origins within 1 mm numeric error
+PASS  Golden-area WGS 84 test point reconstruction after ECEF origin 2 subtraction stays within 1 mm
+PASS  Golden-area WGS 84 test point reconstructs to valid WGS 84 geodetic coordinates
+PASS  Golden-area WGS 84 test point geodetic location is invariant across local origins within 1 mm numeric error
+PASS  high-latitude antimeridian test point reconstruction after ECEF origin 1 subtraction stays within 1 mm
+PASS  high-latitude antimeridian test point reconstructs to valid WGS 84 geodetic coordinates
+PASS  high-latitude antimeridian test point geodetic location is invariant across local origins within 1 mm numeric error
+PASS  high-latitude antimeridian test point reconstruction after ECEF origin 2 subtraction stays within 1 mm
+PASS  high-latitude antimeridian test point reconstructs to valid WGS 84 geodetic coordinates
+PASS  high-latitude antimeridian test point geodetic location is invariant across local origins within 1 mm numeric error
+WF_REBASE_MAX_ECEF_ERROR_M=0.000000000276
+PASS  baltimore actual terrain mesh and collision resources are created
+WF_MESH_VERTEX_MAX_DELTA_M[baltimore]=0.000066998796
+PASS  baltimore renderer uses the validated sample vertices within 1 mm
+PASS  baltimore renderer uses the fixed contract triangle indices
+PASS  baltimore collision triangles exactly match renderer index order
+PASS  baltimore terrain sample normals face upward
+PASS  baltimore upward ray from below hits the actual static terrain collision
+PASS  baltimore upward ray hits the terrain collision body
+PASS  baltimore upward ray intersects the same-index terrain vertex
+PASS  golden actual terrain mesh and collision resources are created
+WF_MESH_VERTEX_MAX_DELTA_M[golden]=0.000084075472
+PASS  golden renderer uses the validated sample vertices within 1 mm
+PASS  golden renderer uses the fixed contract triangle indices
+PASS  golden collision triangles exactly match renderer index order
+PASS  golden terrain sample normals face upward
+PASS  golden upward ray from below hits the actual static terrain collision
+PASS  golden upward ray hits the terrain collision body
+PASS  golden upward ray intersects the same-index terrain vertex
+PASS  rapid site toggles keep at most one worker and one replaceable latest request
+PASS  the queued request count is bounded independently of worker count
+PASS  baltimore asynchronous load completes before the functional test timeout
+PASS  the first rapid request is rejected after the latest-site replacement
+PASS  the latest queued request completes after the previous worker drains
+PASS  superseded rapid requests never install stale terrain
+PASS  the latest-only request queue drains after installation
+PASS  a site request made during a worker is held in the single latest slot
+PASS  unload clears the queued request immediately
+PASS  cancelled worker completion is observed and awaited
+PASS  unload invalidates and rejects a late asynchronous completion
+PASS  unload prevents both active and queued stale results from loading
+PASS  baltimore asynchronous load completes before the functional test timeout
+PASS  Baltimore bundle loads asynchronously in the parent scene
+PASS  one terrain tile owns its render and collision resources
+PASS  Baltimore completion carries its original request ID
+PASS  golden asynchronous load completes before the functional test timeout
+PASS  switching sites unloads Baltimore and loads Golden
+PASS  site replacement leaves exactly one terrain tile
+PASS  Golden completion carries its original request ID
+PASS  unload removes the active render and collision node
+PASS  scene shutdown drains its worker before releasing the manager
+WF_TERRAIN_TEST_RESULT=PASS checks=153 failures=0
