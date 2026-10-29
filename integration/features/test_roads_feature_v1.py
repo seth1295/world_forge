@@ -9,16 +9,19 @@ import struct
 import unittest
 import zipfile
 from pathlib import Path
+from unittest.mock import patch
 
 from build_roads_feature_v1 import (
     ARCHIVE_BYTES,
     ARCHIVE_SHA256,
     ARCHIVE_URL,
     EXPECTED_MEMBERS,
+    MAX_ARCHIVE_BYTES,
     MAX_PROJECTED_SEGMENT_M,
     SELECTED_ROUTES,
     build_output,
     clip_segment,
+    read_bounded_file,
     resample_projected_source_line,
 )
 
@@ -196,6 +199,102 @@ class RoadsFeatureContractTests(unittest.TestCase):
                 data = archive.read(name)
                 self.assertEqual(len(data), expected_length, name)
                 self.assertEqual(hashlib.sha256(data).hexdigest(), expected_hash, name)
+
+    def test_oversized_file_is_rejected_before_open_or_read(self) -> None:
+        output_directory = os.environ.get("WF_ROADS_BUILD_TEST_DIR", "")
+        if not output_directory:
+            self.skipTest("Set WF_ROADS_BUILD_TEST_DIR to a task-local temporary directory for bounded-input tests")
+        directory = Path(output_directory)
+        directory.mkdir(parents=True, exist_ok=True)
+        oversized_path = directory / "oversized_input.bin"
+        oversized_path.write_bytes(b"x" * (MAX_ARCHIVE_BYTES + 1))
+        try:
+            with patch.object(Path, "open", side_effect=AssertionError("oversized file was opened")):
+                with self.assertRaisesRegex(ValueError, f"{MAX_ARCHIVE_BYTES}-byte read cap"):
+                    read_bounded_file(oversized_path, MAX_ARCHIVE_BYTES)
+        finally:
+            oversized_path.unlink(missing_ok=True)
+
+    def test_mutated_source_archive_is_rejected_from_the_hashed_snapshot(self) -> None:
+        archive_path = os.environ.get("WF_CENSUS_ROADS_ZIP", "")
+        output_directory = os.environ.get("WF_ROADS_BUILD_TEST_DIR", "")
+        if not archive_path or not output_directory:
+            self.skipTest("Set source ZIP and task-local output directory to exercise mutated-input rejection")
+        directory = Path(output_directory)
+        directory.mkdir(parents=True, exist_ok=True)
+        mutated_archive = directory / "mutated_roads_source.zip"
+        archive_bytes = bytearray(Path(archive_path).read_bytes())
+        archive_bytes[0] ^= 1
+        mutated_archive.write_bytes(archive_bytes)
+        try:
+            with self.assertRaisesRegex(ValueError, "source ZIP size or SHA-256"):
+                build_output(
+                    mutated_archive,
+                    ROOT / "integration/assets/terrain/golden/manifest.json",
+                    TERRAIN_DIR / "horizontal_xy.f64le",
+                    TERRAIN_DIR / "height_samples.f32le",
+                    directory / "mutated_archive_output.json",
+                    directory / "mutated_archive_vector.json",
+                )
+        finally:
+            mutated_archive.unlink(missing_ok=True)
+
+    def test_mutated_pinned_terrain_manifest_is_rejected_before_parse(self) -> None:
+        archive_path = os.environ.get("WF_CENSUS_ROADS_ZIP", "")
+        output_directory = os.environ.get("WF_ROADS_BUILD_TEST_DIR", "")
+        if not archive_path or not output_directory:
+            self.skipTest("Set source ZIP and task-local output directory to exercise mutated-input rejection")
+        directory = Path(output_directory)
+        directory.mkdir(parents=True, exist_ok=True)
+        original_manifest = (TERRAIN_DIR / "manifest.json").read_bytes()
+        mutated_manifest = directory / "mutated_golden_manifest.json"
+        manifest_bytes = bytearray(original_manifest)
+        artifact_id = b"d4b1bb11e84402136f50edf265a66991d8014326378edbeeaa67c4b169e31d98"
+        artifact_id_offset = original_manifest.find(artifact_id)
+        self.assertGreaterEqual(artifact_id_offset, 0)
+        manifest_bytes[artifact_id_offset] = ord("e")  # Keep valid JSON and the pinned byte length.
+        mutated_manifest.write_bytes(manifest_bytes)
+        try:
+            with self.assertRaisesRegex(ValueError, "Golden terrain manifest SHA-256"):
+                build_output(
+                    Path(archive_path),
+                    mutated_manifest,
+                    TERRAIN_DIR / "horizontal_xy.f64le",
+                    TERRAIN_DIR / "height_samples.f32le",
+                    directory / "mutated_manifest_output.json",
+                    directory / "mutated_manifest_vector.json",
+                )
+        finally:
+            mutated_manifest.unlink(missing_ok=True)
+
+    def test_mutated_pinned_terrain_payload_is_rejected_before_sampling(self) -> None:
+        archive_path = os.environ.get("WF_CENSUS_ROADS_ZIP", "")
+        output_directory = os.environ.get("WF_ROADS_BUILD_TEST_DIR", "")
+        if not archive_path or not output_directory:
+            self.skipTest("Set source ZIP and task-local output directory to exercise mutated-input rejection")
+        directory = Path(output_directory)
+        directory.mkdir(parents=True, exist_ok=True)
+        for payload_name in ("horizontal_xy.f64le", "height_samples.f32le"):
+            with self.subTest(payload=payload_name):
+                original_payload = (TERRAIN_DIR / payload_name).read_bytes()
+                mutated_payload = directory / f"mutated_golden_{payload_name}"
+                payload_bytes = bytearray(original_payload)
+                payload_bytes[0] ^= 1
+                mutated_payload.write_bytes(payload_bytes)
+                horizontal_path = mutated_payload if payload_name == "horizontal_xy.f64le" else TERRAIN_DIR / "horizontal_xy.f64le"
+                heights_path = mutated_payload if payload_name == "height_samples.f32le" else TERRAIN_DIR / "height_samples.f32le"
+                try:
+                    with self.assertRaisesRegex(ValueError, "checked-in Golden terrain payload hash"):
+                        build_output(
+                            Path(archive_path),
+                            TERRAIN_DIR / "manifest.json",
+                            horizontal_path,
+                            heights_path,
+                            directory / f"mutated_{payload_name}_output.json",
+                            directory / f"mutated_{payload_name}_vector.json",
+                        )
+                finally:
+                    mutated_payload.unlink(missing_ok=True)
 
     def test_rebuilt_output_matches_committed_bytes_when_archive_available(self) -> None:
         archive_path = os.environ.get("WF_CENSUS_ROADS_ZIP", "")

@@ -64,29 +64,39 @@ static func load_bundle(repository_root: String) -> Dictionary:
     var schema_result := _read_json_object(schema_path, MAX_SCHEMA_BYTES)
     if not schema_result.get("ok", false):
         return _failure("feature schema could not be read: %s" % String(schema_result.get("error", "")))
-    var contract_result := _read_json_object(feature_path, MAX_FEATURE_BYTES)
-    if not contract_result.get("ok", false):
-        return _failure("feature collection could not be read: %s" % String(contract_result.get("error", "")))
     var feature_bytes := _read_bytes(feature_path, MAX_FEATURE_BYTES)
-    if not feature_bytes.get("ok", false) or HashV1.sha256_bytes(feature_bytes.get("bytes", PackedByteArray())) != FEATURE_FILE_SHA256:
-        return _failure("road feature bundle SHA-256 differs from the reviewed v1 fixture")
+    if not feature_bytes.get("ok", false):
+        return _failure("feature collection could not be read: %s" % String(feature_bytes.get("error", "")))
     var terrain_result := _read_json_object(golden_path, MAX_SCHEMA_BYTES)
     if not terrain_result.get("ok", false):
         return _failure("Golden terrain manifest could not be read: %s" % String(terrain_result.get("error", "")))
 
-    var contract: Dictionary = contract_result["value"]
     var schema: Dictionary = schema_result["value"]
     var terrain_manifest: Dictionary = terrain_result["value"]
-    var validation_error := validate_collection(contract, schema, terrain_manifest)
-    if not validation_error.is_empty():
-        return _failure(validation_error)
+    var contract_result := validate_collection_bytes(feature_bytes["bytes"], schema, terrain_manifest)
+    if not contract_result.get("ok", false):
+        return _failure(String(contract_result.get("error", "feature collection is invalid")))
     return {
         "ok": true,
-        "collection": contract,
+        "collection": contract_result["collection"],
         "schema": schema,
         "terrain_manifest": terrain_manifest,
         "error": ""
     }
+
+static func validate_collection_bytes(bytes: PackedByteArray, schema: Dictionary, terrain_manifest: Dictionary) -> Dictionary:
+    if bytes.is_empty() or bytes.size() > MAX_FEATURE_BYTES:
+        return _failure("feature collection is empty or exceeds its byte limit")
+    if HashV1.sha256_bytes(bytes) != FEATURE_FILE_SHA256:
+        return _failure("road feature bundle SHA-256 differs from the reviewed v1 fixture")
+    var parsed: Dictionary = StrictJson.new().parse_bytes(bytes, MAX_FEATURE_BYTES)
+    if not parsed.get("ok", false) or typeof(parsed.get("value")) != TYPE_DICTIONARY:
+        return _failure(String(parsed.get("error", "feature collection is not a JSON object")))
+    var contract: Dictionary = parsed["value"]
+    var validation_error := validate_collection(contract, schema, terrain_manifest)
+    if not validation_error.is_empty():
+        return _failure(validation_error)
+    return {"ok": true, "collection": contract, "error": ""}
 
 static func validate_collection(contract: Dictionary, schema: Dictionary, terrain_manifest: Dictionary) -> String:
     var schema_error := SchemaV1.validate(contract, schema)

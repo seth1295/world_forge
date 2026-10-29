@@ -51,6 +51,7 @@ func _run_roads_contract_tests(repository_root: String) -> void:
     _expect(collection["frame"]["frame_id"] == site["frame_id"], "road and terrain scene use the Golden frame ID")
     _expect(collection["terrain_support"]["artifact_id"] == site["artifact_id"], "road bundle references the pinned Golden artifact")
 
+    _test_collection_digest(repository_root, schema, terrain_manifest)
     _test_rejection_cases(collection, schema, terrain_manifest)
     _test_known_dem_sample(repository_root, decoded)
     _test_intermediate_triangle_sample(decoded)
@@ -96,6 +97,37 @@ func _run_roads_contract_tests(repository_root: String) -> void:
     print("WF_ROADS_LINE_STRIP_COUNT=%d" % int(drape["line_strip_count"]))
     print("WF_ROADS_ALIGNMENT_SAMPLE_REPORTS=%s" % JSON.stringify(drape["sample_reports"]))
     placement_root.queue_free()
+
+func _test_collection_digest(repository_root: String, schema: Dictionary, terrain_manifest: Dictionary) -> void:
+    var feature_path := repository_root.path_join("integration/features").path_join(Roads.FEATURE_FILE)
+    var file := FileAccess.open(feature_path, FileAccess.READ)
+    _expect(file != null, "road feature bytes open for the pinned digest regression test")
+    if file == null:
+        return
+    var byte_count := file.get_length()
+    _expect(byte_count > 0 and byte_count <= Roads.MAX_FEATURE_BYTES, "road feature bytes fit the consumer read cap")
+    if byte_count <= 0 or byte_count > Roads.MAX_FEATURE_BYTES:
+        file.close()
+        return
+    var source_bytes := file.get_buffer(byte_count)
+    file.close()
+    _expect(source_bytes.size() == byte_count, "road feature bytes are fully read once for the digest regression test")
+    if source_bytes.size() != byte_count:
+        return
+
+    var marker := "urn:worldforge:contract:road-centerlines:1.0.0"
+    var marker_character_index := source_bytes.get_string_from_utf8().find(marker)
+    _expect(marker_character_index >= 0, "road feature bytes contain the contract identity marker")
+    if marker_character_index < 0:
+        return
+    var byte_index := source_bytes.get_string_from_utf8().substr(0, marker_character_index).to_utf8_buffer().size()
+    var changed_bytes := source_bytes.duplicate()
+    changed_bytes[byte_index + marker.to_utf8_buffer().size() - 1] = 0x31
+    var changed_result := Roads.validate_collection_bytes(changed_bytes, schema, terrain_manifest)
+    _expect(
+        not changed_result.get("ok", false) and String(changed_result.get("error", "")).contains("SHA-256"),
+        "feature consumer rejects same-length collection bytes whose digest differs from the pinned bundle"
+    )
 
 func _test_rejection_cases(collection: Dictionary, schema: Dictionary, terrain_manifest: Dictionary) -> void:
     var wrong_frame := collection.duplicate(true)

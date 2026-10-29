@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import json
 import math
 import struct
@@ -47,10 +48,35 @@ SELECTED_ROUTES = {
 CROP = (-105.24, 39.745, -105.20, 39.765)
 MAX_PROJECTED_SEGMENT_M = 10.0
 MAX_ARCHIVE_BYTES = 8_000_000
+MAX_TERRAIN_MANIFEST_BYTES = 65_536
+MAX_TERRAIN_HORIZONTAL_BYTES = 67_108_864
+MAX_TERRAIN_HEIGHT_BYTES = 16_777_216
+GOLDEN_MANIFEST_BYTES = 6_874
+GOLDEN_MANIFEST_SHA256 = "7e7a413a2446dc5464dbddbb215143105f009111fcf155b0a79df6cfe8c014a9"
 
 
 def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def read_bounded_file(
+    path: Path,
+    max_bytes: int,
+    expected_bytes: int | None = None,
+) -> bytes:
+    """Read one file snapshot after a pre-allocation size check."""
+    if max_bytes < 0:
+        raise ValueError("file size cap must be nonnegative")
+    file_size = path.stat().st_size
+    if file_size < 0 or file_size > max_bytes:
+        raise ValueError(f"file exceeds its {max_bytes}-byte read cap: {path.name}")
+    if expected_bytes is not None and file_size != expected_bytes:
+        raise ValueError(f"file size differs from its pinned length: {path.name}")
+    with path.open("rb") as source_file:
+        buffer = source_file.read(file_size + 1)
+    if len(buffer) != file_size:
+        raise ValueError(f"file changed size or was truncated during its bounded read: {path.name}")
+    return buffer
 
 
 def read_dbf(data: bytes) -> tuple[list[tuple[str, str, int]], list[dict[str, str]]]:
@@ -405,13 +431,11 @@ def build_output(
     output_path: Path,
     vector_path: Path,
 ) -> dict[str, Any]:
-    archive_bytes = archive_path.read_bytes()
-    if len(archive_bytes) > MAX_ARCHIVE_BYTES:
-        raise ValueError("Census county archive exceeds the local converter size cap")
+    archive_bytes = read_bounded_file(archive_path, MAX_ARCHIVE_BYTES, ARCHIVE_BYTES)
     if len(archive_bytes) != ARCHIVE_BYTES or sha256(archive_bytes) != ARCHIVE_SHA256:
         raise ValueError("source ZIP size or SHA-256 does not match the selected 2026 Census archive")
 
-    with zipfile.ZipFile(archive_path, "r") as archive:
+    with zipfile.ZipFile(io.BytesIO(archive_bytes), "r") as archive:
         names = set(archive.namelist())
         if names != EXPECTED_MEMBERS:
             raise ValueError(f"archive component set differs from the official 2026 layer: {sorted(names)}")
@@ -443,7 +467,14 @@ def build_output(
     if len(shx) != 100 + len(rows) * 8 or struct.unpack_from("<i", shx, 32)[0] != 3:
         raise ValueError("SHX record count or shape type is invalid")
 
-    terrain_manifest = json.loads(terrain_manifest_path.read_text(encoding="utf-8"))
+    terrain_manifest_bytes = read_bounded_file(
+        terrain_manifest_path,
+        MAX_TERRAIN_MANIFEST_BYTES,
+        GOLDEN_MANIFEST_BYTES,
+    )
+    if sha256(terrain_manifest_bytes) != GOLDEN_MANIFEST_SHA256:
+        raise ValueError("Golden terrain manifest SHA-256 differs from the pinned support manifest")
+    terrain_manifest = json.loads(terrain_manifest_bytes.decode("utf-8"))
     frame = terrain_manifest["frame"]
     horizontal = frame["horizontal"]
     if (
@@ -458,12 +489,20 @@ def build_output(
     if any(token in pipeline for token in ("wgs84", "wgs 84", "towgs84", "hgridshift", "vgridshift", "helmert", "ballpark")):
         raise ValueError("Golden projection pipeline contains an unapproved datum bridge")
     transform, library_versions = load_projection_tools()
-    terrain_xy = horizontal_path.read_bytes()
-    terrain_heights = heights_path.read_bytes()
+    terrain_payloads = terrain_manifest["payloads"]
+    terrain_xy = read_bounded_file(
+        horizontal_path,
+        MAX_TERRAIN_HORIZONTAL_BYTES,
+        int(terrain_payloads["horizontal_xy"]["byte_length"]),
+    )
+    terrain_heights = read_bounded_file(
+        heights_path,
+        MAX_TERRAIN_HEIGHT_BYTES,
+        int(terrain_payloads["height_samples"]["byte_length"]),
+    )
     expected_samples = int(terrain_manifest["grid"]["rows"]) * int(terrain_manifest["grid"]["columns"])
     if len(terrain_xy) != expected_samples * 16 or len(terrain_heights) != expected_samples * 4:
         raise ValueError("checked-in Golden terrain payload lengths do not match its grid")
-    terrain_payloads = terrain_manifest["payloads"]
     if sha256(terrain_xy) != terrain_payloads["horizontal_xy"]["sha256"] or sha256(terrain_heights) != terrain_payloads["height_samples"]["sha256"]:
         raise ValueError("checked-in Golden terrain payload hash differs from its manifest")
     sample_fixture = validate_projection_identity(

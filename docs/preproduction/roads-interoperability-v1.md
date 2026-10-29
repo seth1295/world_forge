@@ -82,7 +82,7 @@ longitude [-105.24, -105.20]
 latitude  [ 39.745,  39.765]
 ~~~
 
-The complete county ZIP is not stored in the repository. The source-to-feature converter reads the ZIP in place, checks the expected archive and each component hash, validates the .prj, parses only the needed PolyLine/DBF data, clips to the crop, and emits the three selected features.
+The complete county ZIP is not stored in the repository. The source-to-feature converter checks archive size before allocation, reads it once into a bounded immutable byte snapshot, hashes that exact buffer, and passes it to the ZIP reader without reopening the path. It checks each component hash, validates the .prj, parses only the needed PolyLine/DBF data, clips to the crop, and emits the three selected features. The pinned Golden manifest and terrain payloads are also read through bounded snapshots and verified against their recorded hashes before parsing or sampling; projection identity checks use those same verified buffers. The converter pins the 6,874-byte Golden manifest at SHA-256 `7e7a413a2446dc5464dbddbb215143105f009111fcf155b0a79df6cfe8c014a9`; its 1,492,992-byte horizontal XY and 373,248-byte height payloads are checked against the manifest hashes before use.
 
 ## Versioned feature interchange
 
@@ -147,8 +147,10 @@ A source-clipped coordinate may lie in the outer half-pixel footprint beyond the
 The actual windowed Godot capture is [roads-golden-runtime.png](evidence/roads-golden-runtime.png), **1920 × 1080**, SHA-256:
 
 ~~~text
-943f269001eef143e4c2ba1798de1b1cb2d11dc027a6dbb00a9c3bac0beb7968
+a3a80cf32d8c72ba4fa6a13d2b5cdc71c94c1bc66de337ef11250fe00dc2043c
 ~~~
+
+The success HUD visibly states that Census positional accuracy is unspecified and that no survey-fit claim is made.
 
 Capture context:
 
@@ -193,6 +195,8 @@ The converter validates the exact archive and components before producing the ex
 python integration/features/build_roads_feature_v1.py --source-zip $env:WF_CENSUS_ROADS_ZIP
 ~~~
 
+The Godot consumer reads the feature collection once under its 4,000,000-byte cap, hashes the resulting `PackedByteArray`, and parses that same buffer only after its digest matches the pinned fixture hash. Its regression test changes one byte in the contract identity while keeping valid JSON and confirms the altered buffer is rejected by the digest check.
+
 Python contract/source tests:
 
 ~~~powershell
@@ -207,7 +211,7 @@ $env:APPDATA = Join-Path $env:TEMP 'worldforge-godot-userdata'
 & $GodotExe --headless --path (Join-Path $RepoRoot 'integration') --scene res://scenes/roads_interoperability_viewer.tscn -- --test roads
 ~~~
 
-The observed Python test run passed **9 tests**, including source ZIP and component SHA-256 verification and byte-for-byte deterministic rebuild. The pinned Godot headless suite passed source ID/properties, frame identity, malformed/non-finite/Z/width/duplicate rejection, exact DEM pixel-centre mapping, exact intermediate triangle interpolation, drape counts, and terrain/road scene placement.
+The observed Python test run passed **13 tests**, including source ZIP and component SHA-256 verification, rejection of oversized and mutated inputs before use, and byte-for-byte deterministic rebuild. The pinned Godot headless suite passed source ID/properties, frame identity, same-length changed-buffer digest rejection, malformed/non-finite/Z/width/duplicate rejection, exact DEM pixel-centre mapping, exact intermediate triangle interpolation, drape counts, and terrain/road scene placement.
 
 The first Godot invocation before --editor --import --quit did not have the project global class cache and failed to resolve existing class_name scripts. After the import step, the pinned runtime test passed. The headless import logged an editor-help cache write failure outside the repository but completed its project scan and class registration. Godot also reports that it cannot read the Windows root certificate store in this environment; the local decode, draw, capture, and contract tests succeed without network access. These are environment warnings, not evidence of a data or projection failure.
 

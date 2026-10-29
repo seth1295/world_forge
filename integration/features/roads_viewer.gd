@@ -183,6 +183,7 @@ func _on_load_succeeded(_request_id: int, site_id: String, artifact_id: String, 
         DISPLAY_OFFSET_M,
         int(drape["support_miss_count"])
     ]
+    _detail_label.text += "\nCensus positional accuracy is unspecified; no survey-fit claim is made"
 
     print("WF_ROADS_RUNTIME_SCENE=Golden")
     print("WF_ROADS_RUNTIME_FRAME_ID=%s" % frame_id)
@@ -191,6 +192,7 @@ func _on_load_succeeded(_request_id: int, site_id: String, artifact_id: String, 
     print("WF_ROADS_RUNTIME_CENSUS_ARCHIVE_SHA256=%s" % String(collection["source"]["archive_sha256"]))
     print("WF_ROADS_RUNTIME_FEATURE_COUNT=%d" % collection["features"].size())
     print("WF_ROADS_RUNTIME_FEATURE_IDS=%s" % JSON.stringify(_feature_ids(collection["features"])))
+    print("WF_ROADS_RUNTIME_POSITIONAL_ACCURACY=unspecified; no survey-fit claim")
     print("WF_ROADS_RUNTIME_DRAPED_POINT_COUNT=%d" % int(drape["draped_point_count"]))
     print("WF_ROADS_RUNTIME_DISPLAY_VERTEX_COUNT=%d" % int(drape["rendered_vertex_count"]))
     print("WF_ROADS_RUNTIME_TERRAIN_EDGE_MISS_COUNT=%d" % int(drape["support_miss_count"]))
