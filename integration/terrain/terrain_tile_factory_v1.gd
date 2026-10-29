@@ -1,15 +1,20 @@
 class_name TerrainTileFactoryV1
 extends RefCounted
 
+const LodBuilder := preload("res://terrain/terrain_lod_builder_v1.gd")
+
 ## Build renderer and static collision resources only after the decoder has validated
-## the manifest and every sample. Both resources share one local-space vertex set.
-static func create_tile(decoded: Dictionary, lod_policy: String = "single_window_full_resolution") -> Node3D:
+## the manifest and every sample. Rendering and collision use the same LOD vertices.
+static func create_tile(decoded: Dictionary, lod_policy: String = "single_window_full_resolution", lod_level: int = 0, prebuilt_geometry: Dictionary = {}) -> Node3D:
     if not decoded.get("ok", false):
         return null
-    var vertices: PackedVector3Array = decoded["vertices"]
-    var normals: PackedVector3Array = decoded["normals"]
-    var indices: PackedInt32Array = decoded["indices"]
-    var faces: PackedVector3Array = decoded["faces"]
+    var lod_geometry := prebuilt_geometry if not prebuilt_geometry.is_empty() else LodBuilder.build(decoded, lod_level)
+    if not lod_geometry.get("ok", false) or int(lod_geometry.get("lod_level", -1)) != lod_level:
+        return null
+    var vertices: PackedVector3Array = lod_geometry["vertices"]
+    var normals: PackedVector3Array = lod_geometry["normals"]
+    var indices: PackedInt32Array = lod_geometry["indices"]
+    var faces: PackedVector3Array = lod_geometry["faces"]
     if vertices.is_empty() or indices.is_empty() or faces.is_empty() or indices.size() != faces.size():
         return null
 
@@ -38,9 +43,14 @@ static func create_tile(decoded: Dictionary, lod_policy: String = "single_window
     root.set_meta("region_id", decoded["manifest"]["grid"]["region_id"])
     root.set_meta("frame_id", decoded["manifest"]["frame"]["frame_id"])
     root.set_meta("artifact_id", decoded["artifact_id"])
-    root.set_meta("lod_level", 0)
-    root.set_meta("sample_stride", int(decoded["manifest"]["grid"]["sample_stride"]))
+    root.set_meta("lod_level", lod_level)
+    root.set_meta("sample_stride", int(lod_geometry["sample_stride"]))
+    root.set_meta("edge_sample_policy", "preserve_final_row_and_column")
+    root.set_meta("source_row_indices", lod_geometry["source_rows"])
+    root.set_meta("source_column_indices", lod_geometry["source_columns"])
     root.set_meta("lod_policy", lod_policy)
+    root.set_meta("collision_contact_eligible", lod_level == 0)
+    root.set_meta("collision_fidelity_policy", "source_sampled_level_0" if lod_level == 0 else "coarse_structural_lod_not_for_ground_contact")
 
     var mesh_instance := MeshInstance3D.new()
     mesh_instance.name = "TerrainSurface"
@@ -50,14 +60,15 @@ static func create_tile(decoded: Dictionary, lod_policy: String = "single_window
 
     var body := StaticBody3D.new()
     body.name = "TerrainCollision"
-    body.collision_layer = 1
-    body.collision_mask = 1
+    body.collision_layer = 1 if lod_level == 0 else 0
+    body.collision_mask = 1 if lod_level == 0 else 0
     var collision_shape := CollisionShape3D.new()
     collision_shape.name = "TerrainTriangles"
     var collision := ConcavePolygonShape3D.new()
     collision.backface_collision = true
     collision.set_faces(faces)
     collision_shape.shape = collision
+    collision_shape.disabled = lod_level != 0
     body.add_child(collision_shape)
     root.add_child(body)
     return root

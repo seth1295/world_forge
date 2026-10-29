@@ -62,7 +62,7 @@ static func _decode_window_set(site_id: String, repository_root: String, window_
         "windows": decoded_windows,
         "window_ids": ordered_ids,
         "frame_id": String(decoded_windows[0]["manifest"]["frame"]["frame_id"]),
-        "lod_policy": "neighbor_locked_full_resolution"
+        "lod_policy": "adjacent_atomic_exact_subsample"
     }
 
 static func _order_and_validate_adjacent_pair(decoded_windows: Array[Dictionary]) -> Dictionary:

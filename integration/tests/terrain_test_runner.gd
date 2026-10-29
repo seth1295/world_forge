@@ -8,6 +8,7 @@ const SiteCatalog := preload("res://terrain/site_catalog_v1.gd")
 const TileFactory := preload("res://terrain/terrain_tile_factory_v1.gd")
 const GeodeticEcef := preload("res://terrain/geodetic_ecef_wgs84_v1.gd")
 const StreamManager := preload("res://terrain/terrain_stream_manager_v1.gd")
+const LodBuilder := preload("res://terrain/terrain_lod_builder_v1.gd")
 
 var _checks := 0
 var _failures := 0
@@ -505,7 +506,8 @@ func _run_adjacent_lifecycle_tests() -> void:
     if west_tile != null and east_tile != null:
         for tile in [west_tile, east_tile]:
             _check(int(tile.get_meta("lod_level", -1)) == 0 and int(tile.get_meta("sample_stride", -1)) == 1, "adjacent tile stays at full-resolution LOD level 0")
-            _check(String(tile.get_meta("lod_policy", "")) == "neighbor_locked_full_resolution", "adjacent tile advertises the shared seam-safe neighbor LOD policy")
+            _check(String(tile.get_meta("lod_policy", "")) == "adjacent_atomic_exact_subsample", "adjacent tile advertises the shared atomic exact-sample LOD policy")
+            _check(bool(tile.get_meta("collision_contact_eligible", false)) and String(tile.get_meta("collision_fidelity_policy", "")) == "source_sampled_level_0", "LOD 0 collision is explicitly marked source-sampled and ground-contact eligible")
             _check(tile.get_node_or_null("TerrainSurface") != null and tile.get_node_or_null("TerrainCollision") != null, "each adjacent window installs both a visible mesh and static collision body")
         var west_body: StaticBody3D = west_tile.get_node("TerrainCollision")
         var east_body: StaticBody3D = east_tile.get_node("TerrainCollision")
@@ -522,6 +524,75 @@ func _run_adjacent_lifecycle_tests() -> void:
         await _check_upward_terrain_ray(east_probe, [east_body], east_body, "east adjacent tile interior")
         _check(seam_west == seam_east, "installed neighbor meshes use the same local vertex at their shared sample")
         await _check_upward_terrain_ray(seam_west, [west_body, east_body], null, "shared adjacent tile boundary")
+
+        var lod_one_result: Dictionary = manager.transition_adjacent_lod(1)
+        _check(lod_one_result.get("ok", false) and manager.current_lod_level == 1, "one command switches both adjacent tiles together from LOD 0 to LOD 1: %s" % String(lod_one_result.get("error", "")))
+        _check(not bool(lod_one_result.get("ground_contact_collision_eligible", true)) and not manager.ground_contact_collision_eligible, "LOD 1 collision is explicitly ineligible for ground-level contact")
+        var lod_one_west: Dictionary = LodBuilder.build(west_decoded, 1)
+        var lod_one_east: Dictionary = LodBuilder.build(east_decoded, 1)
+        var lod_pair_result: Dictionary = LodBuilder.validate_adjacent_pair(lod_one_west, lod_one_east)
+        _check(lod_pair_result.get("ok", false), "coarse neighbor pair preserves exact shared sample rows and seam vertices")
+        var west_level_one := manager.get_loaded_tile("golden-west")
+        var east_level_one := manager.get_loaded_tile("golden-east")
+        _check(west_level_one != null and east_level_one != null and west_level_one != west_tile and east_level_one != east_tile, "LOD 1 replaces both old render/collision roots with new paired roots")
+        var west_level_one_body: StaticBody3D = west_level_one.get_node("TerrainCollision")
+        var east_level_one_body: StaticBody3D = east_level_one.get_node("TerrainCollision")
+        for tile in [west_level_one, east_level_one]:
+            _check(int(tile.get_meta("lod_level", -1)) == 1 and int(tile.get_meta("sample_stride", -1)) == 2, "both neighbors advertise level 1 with exact stride-2 source sampling")
+            _check(String(tile.get_meta("edge_sample_policy", "")) == "preserve_final_row_and_column", "coarse LOD preserves the final source row and column")
+            _check(not bool(tile.get_meta("collision_contact_eligible", true)) and String(tile.get_meta("collision_fidelity_policy", "")) == "coarse_structural_lod_not_for_ground_contact", "LOD 1 collision explicitly refuses a ground-contact fidelity claim")
+        var west_lod_rows: Array[int] = lod_one_west["source_rows"]
+        var west_lod_columns: Array[int] = lod_one_west["source_columns"]
+        var east_lod_columns: Array[int] = lod_one_east["source_columns"]
+        _check(west_lod_rows.front() == 0 and west_lod_rows.back() == 215 and west_lod_columns.front() == 0 and west_lod_columns.back() == 216 and east_lod_columns.front() == 0 and east_lod_columns.back() == 215, "LOD 1 retains each outer edge and the shared global source column 8430")
+        var west_lod_vertices: PackedVector3Array = lod_one_west["vertices"]
+        var east_lod_vertices: PackedVector3Array = lod_one_east["vertices"]
+        var max_sample_copy_delta_m := 0.0
+        var west_source_columns := int(west_decoded["columns"])
+        for output_row in range(west_lod_rows.size()):
+            for output_column in range(west_lod_columns.size()):
+                var source_index := west_lod_rows[output_row] * west_source_columns + west_lod_columns[output_column]
+                max_sample_copy_delta_m = maxf(max_sample_copy_delta_m, west_lod_vertices[output_row * west_lod_columns.size() + output_column].distance_to(west_vertices[source_index]))
+        var east_source_columns := int(east_decoded["columns"])
+        var east_lod_rows: Array[int] = lod_one_east["source_rows"]
+        for output_row in range(east_lod_rows.size()):
+            for output_column in range(east_lod_columns.size()):
+                var source_index: int = east_lod_rows[output_row] * east_source_columns + east_lod_columns[output_column]
+                max_sample_copy_delta_m = maxf(max_sample_copy_delta_m, east_lod_vertices[output_row * east_lod_columns.size() + output_column].distance_to(east_vertices[source_index]))
+        _check(max_sample_copy_delta_m == 0.0, "LOD 1 uses exact existing source sample coordinates and heights without averaging or resampling")
+        var max_omitted_deviation_m := float(lod_one_result.get("max_omitted_sample_deviation_m", INF))
+        print("WF_GOLDEN_ADJACENT_MAX_OMITTED_SAMPLE_DEVIATION_M=%.9f" % max_omitted_deviation_m)
+        _check(is_finite(max_omitted_deviation_m) and max_omitted_deviation_m > 0.0, "LOD 1 records a finite observed omitted-sample deviation for the real crop")
+        var west_level_one_mesh: MeshInstance3D = west_level_one.get_node("TerrainSurface")
+        var east_level_one_mesh: MeshInstance3D = east_level_one.get_node("TerrainSurface")
+        _check((west_level_one_mesh.mesh as ArrayMesh).surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size() == west_lod_vertices.size() and (east_level_one_mesh.mesh as ArrayMesh).surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size() == east_lod_vertices.size(), "LOD 1 renderer uses the reduced exact-sample geometry for both tiles")
+        var west_level_one_shape: CollisionShape3D = west_level_one_body.get_node("TerrainTriangles")
+        var east_level_one_shape: CollisionShape3D = east_level_one_body.get_node("TerrainTriangles")
+        _check(west_level_one_shape.shape.get_faces() == lod_one_west["faces"] and east_level_one_shape.shape.get_faces() == lod_one_east["faces"], "LOD 1 coarse collision resources match their rendered triangle geometry")
+        _check(west_level_one_shape.disabled and east_level_one_shape.disabled and west_level_one_body.collision_layer == 0 and east_level_one_body.collision_layer == 0 and west_level_one_body.collision_mask == 0 and east_level_one_body.collision_mask == 0, "LOD 1 collision is disabled on shapes and physics layers so it cannot affect contacts or queries")
+        await get_tree().physics_frame
+        var coarse_row := 53
+        var west_coarse_width := int(lod_one_west["columns"])
+        var east_coarse_width := int(lod_one_east["columns"])
+        await _check_upward_terrain_no_hit(west_lod_vertices[coarse_row * west_coarse_width + west_coarse_width - 2], "west LOD 1 disabled collision")
+        await _check_upward_terrain_no_hit(east_lod_vertices[coarse_row * east_coarse_width + 1], "east LOD 1 disabled collision")
+        var coarse_seam_west := west_lod_vertices[coarse_row * west_coarse_width + west_coarse_width - 1]
+        var coarse_seam_east := east_lod_vertices[coarse_row * east_coarse_width]
+        _check(coarse_seam_west == coarse_seam_east, "both level-1 neighbors keep a bit-identical local shared seam vertex")
+        await _check_upward_terrain_no_hit(coarse_seam_west, "shared LOD 1 disabled boundary collision")
+
+        var lod_zero_result: Dictionary = manager.transition_adjacent_lod(0)
+        _check(lod_zero_result.get("ok", false) and manager.current_lod_level == 0, "one command switches both adjacent tiles together from LOD 1 back to LOD 0")
+        _check(bool(lod_zero_result.get("ground_contact_collision_eligible", false)) and manager.ground_contact_collision_eligible, "returning to LOD 0 restores the source-sampled ground-contact collision designation")
+        var west_level_zero_again := manager.get_loaded_tile("golden-west")
+        var east_level_zero_again := manager.get_loaded_tile("golden-east")
+        _check(west_level_zero_again != null and east_level_zero_again != null and int(west_level_zero_again.get_meta("lod_level", -1)) == 0 and int(east_level_zero_again.get_meta("lod_level", -1)) == 0, "return transition rebuilds both neighbors at full resolution")
+        if west_level_zero_again != null and east_level_zero_again != null:
+            var west_level_zero_body: StaticBody3D = west_level_zero_again.get_node("TerrainCollision")
+            var east_level_zero_body: StaticBody3D = east_level_zero_again.get_node("TerrainCollision")
+            await _check_upward_terrain_ray(west_probe, [west_level_zero_body], west_level_zero_body, "west returned LOD 0 tile")
+            await _check_upward_terrain_ray(east_probe, [east_level_zero_body], east_level_zero_body, "east returned LOD 0 tile")
+            await _check_upward_terrain_ray(seam_west, [west_level_zero_body, east_level_zero_body], null, "returned LOD 0 shared boundary")
     else:
         _check(false, "both adjacent tile roots exist before collision probes")
 
@@ -561,6 +632,22 @@ func _check_upward_terrain_ray(expected_position: Vector3, allowed_bodies: Array
         if required_body != null:
             _check(collider == required_body, "%s upward ray resolves to the owning tile collision body" % description)
         _check(ray.get_collision_point().distance_to(expected_position) <= 0.001, "%s upward ray intersects the decoded sample position within 1 mm" % description)
+    ray.queue_free()
+    await get_tree().process_frame
+
+func _check_upward_terrain_no_hit(expected_position: Vector3, description: String) -> void:
+    var ray := RayCast3D.new()
+    ray.name = "DisabledLodCollisionRejectionCheck"
+    ray.collision_mask = 1
+    ray.collide_with_areas = false
+    ray.collide_with_bodies = true
+    ray.hit_back_faces = true
+    ray.position = expected_position + Vector3(0.0, -50.0, 0.0)
+    ray.target_position = Vector3(0.0, 100.0, 0.0)
+    add_child(ray)
+    await get_tree().physics_frame
+    await get_tree().physics_frame
+    _check(not ray.is_colliding(), "%s cannot be hit by a same-index upward physics ray" % description)
     ray.queue_free()
     await get_tree().process_frame
 func _wait_for_site(manager: TerrainStreamManagerV1, site_id: String) -> void:

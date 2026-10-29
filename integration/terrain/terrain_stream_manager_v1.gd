@@ -4,6 +4,8 @@ extends Node3D
 signal load_started(request_id: int, site_id: String)
 signal load_succeeded(request_id: int, site_id: String, artifact_id: String, frame_id: String)
 signal window_set_loaded(request_id: int, site_id: String, window_ids: Array[String], frame_id: String)
+signal lod_transition_completed(lod_level: int, max_omitted_sample_deviation_m: float)
+signal lod_transition_failed(lod_level: int, message: String)
 signal load_failed(request_id: int, site_id: String, message: String)
 signal unloaded(request_id: int)
 signal stale_result_rejected(request_id: int, site_id: String, artifact_id: String, current_request_id: int)
@@ -11,13 +13,16 @@ signal stale_result_rejected(request_id: int, site_id: String, artifact_id: Stri
 const Decoder := preload("res://terrain/bundle_decoder_v1.gd")
 const SiteCatalog := preload("res://terrain/site_catalog_v1.gd")
 const TileFactory := preload("res://terrain/terrain_tile_factory_v1.gd")
+const LodBuilder := preload("res://terrain/terrain_lod_builder_v1.gd")
 const MAX_IN_FLIGHT_WORKERS := 1
 
 var _request_sequence := 0
 var _current_request_id := 0
 var _current_site_id := ""
 var _active_tiles: Array[Node3D] = []
+var _active_decoded_windows: Array[Dictionary] = []
 var _loaded_window_ids: Array[String] = []
+var _current_lod_level := -1
 var _pending_tasks: Array[Dictionary] = []
 var _queued_latest_request: Dictionary = {}
 
@@ -28,6 +33,14 @@ var loaded_site_id: String:
 var loaded_window_ids: Array[String]:
     get:
         return _loaded_window_ids.duplicate()
+
+var current_lod_level: int:
+    get:
+        return _current_lod_level
+
+var ground_contact_collision_eligible: bool:
+    get:
+        return not _active_tiles.is_empty() and _current_lod_level == 0
 
 func _ready() -> void:
     set_process(true)
@@ -145,6 +158,61 @@ func get_loaded_tile(window_id: String) -> Node3D:
             return tile
     return null
 
+## Rebuild both installed neighbors in one main-thread operation. LOD 1 uses exact
+## every-other samples plus retained outer edges; render and collision are swapped together.
+func transition_adjacent_lod(lod_level: int) -> Dictionary:
+    if lod_level < 0 or lod_level > 1:
+        var invalid_level := "only LOD levels 0 and 1 are supported"
+        lod_transition_failed.emit(lod_level, invalid_level)
+        return {"ok": false, "error": invalid_level}
+    if _active_decoded_windows.size() != 2 or _active_tiles.size() != 2:
+        var missing_pair := "LOD transition requires an installed two-window neighbor set"
+        lod_transition_failed.emit(lod_level, missing_pair)
+        return {"ok": false, "error": missing_pair}
+    if not _pending_tasks.is_empty() or not _queued_latest_request.is_empty():
+        var pending_load := "LOD transition is blocked while another terrain request is pending"
+        lod_transition_failed.emit(lod_level, pending_load)
+        return {"ok": false, "error": pending_load}
+    if lod_level == _current_lod_level:
+        return {"ok": true, "error": "", "lod_level": lod_level, "ground_contact_collision_eligible": lod_level == 0, "max_omitted_sample_deviation_m": 0.0}
+    var geometries: Array[Dictionary] = []
+    var max_deviation := 0.0
+    for decoded_window in _active_decoded_windows:
+        var geometry := LodBuilder.build(decoded_window, lod_level)
+        if not geometry.get("ok", false):
+            var build_error := String(geometry.get("error", "LOD geometry build failed"))
+            lod_transition_failed.emit(lod_level, build_error)
+            return {"ok": false, "error": build_error}
+        geometries.append(geometry)
+        max_deviation = maxf(max_deviation, float(geometry.get("max_omitted_sample_deviation_m", 0.0)))
+    var seam_result := LodBuilder.validate_adjacent_pair(geometries[0], geometries[1])
+    if not seam_result.get("ok", false):
+        var seam_error := String(seam_result.get("error", "adjacent LOD seam validation failed"))
+        lod_transition_failed.emit(lod_level, seam_error)
+        return {"ok": false, "error": seam_error}
+    var candidate_tiles: Array[Node3D] = []
+    for index in range(_active_decoded_windows.size()):
+        var tile := TileFactory.create_tile(_active_decoded_windows[index], "adjacent_atomic_exact_subsample", lod_level, geometries[index])
+        if tile == null:
+            for candidate in candidate_tiles:
+                candidate.queue_free()
+            var tile_error := "LOD render or collision resource could not be created"
+            lod_transition_failed.emit(lod_level, tile_error)
+            return {"ok": false, "error": tile_error}
+        candidate_tiles.append(tile)
+    # Candidate resources are complete before the active pair is detached. No frame or
+    # physics tick can observe one neighbor at a different LOD or with stale collision.
+    for old_tile in _active_tiles:
+        if is_instance_valid(old_tile) and old_tile.get_parent() == self:
+            remove_child(old_tile)
+            old_tile.queue_free()
+    for candidate in candidate_tiles:
+        add_child(candidate)
+    _active_tiles = candidate_tiles
+    _current_lod_level = lod_level
+    lod_transition_completed.emit(lod_level, max_deviation)
+    return {"ok": true, "error": "", "lod_level": lod_level, "ground_contact_collision_eligible": lod_level == 0, "max_omitted_sample_deviation_m": max_deviation}
+
 func _launch_request(request: Dictionary) -> void:
     if _pending_tasks.size() >= MAX_IN_FLIGHT_WORKERS:
         _queued_latest_request = request
@@ -238,7 +306,7 @@ func _complete_task(task: Dictionary, wait_error: int) -> void:
     var created_tiles: Array[Node3D] = []
     var lod_policy := "single_window_full_resolution" if decoded_windows.size() == 1 else String(decoded_set.get("lod_policy", "neighbor_locked_full_resolution"))
     for decoded_window in decoded_windows:
-        var tile := TileFactory.create_tile(decoded_window, lod_policy)
+        var tile := TileFactory.create_tile(decoded_window, lod_policy, 0)
         if tile == null:
             for created in created_tiles:
                 created.queue_free()
@@ -249,7 +317,11 @@ func _complete_task(task: Dictionary, wait_error: int) -> void:
     for tile in created_tiles:
         add_child(tile)
     _active_tiles = created_tiles
+    _active_decoded_windows.clear()
+    for decoded_window in decoded_windows:
+        _active_decoded_windows.append(decoded_window)
     _loaded_window_ids = expected_ids.duplicate()
+    _current_lod_level = 0
     if decoded_windows.size() == 1:
         load_succeeded.emit(request_id, site_id, String(decoded_windows[0]["artifact_id"]), String(task["expected_frame_id"]))
     else:
@@ -263,7 +335,9 @@ func _remove_loaded_tiles() -> void:
             remove_child(tile)
         tile.queue_free()
     _active_tiles.clear()
+    _active_decoded_windows.clear()
     _loaded_window_ids.clear()
+    _current_lod_level = -1
 
 func _exit_tree() -> void:
     # Invalidation prevents late completion from installing a partial window set during teardown.
@@ -275,4 +349,6 @@ func _exit_tree() -> void:
         WorkerThreadPool.wait_for_task_completion(int(task["task_id"]))
     _pending_tasks.clear()
     _active_tiles.clear()
+    _active_decoded_windows.clear()
     _loaded_window_ids.clear()
+    _current_lod_level = -1

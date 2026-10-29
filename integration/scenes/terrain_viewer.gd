@@ -10,6 +10,7 @@ var _site_selector: OptionButton
 var _status_label: Label
 var _detail_label: Label
 var _unload_button: Button
+var _lod_button: Button
 var _capture_output_path := ""
 
 func _ready() -> void:
@@ -22,6 +23,8 @@ func _ready() -> void:
     _stream_manager.load_started.connect(_on_load_started)
     _stream_manager.load_succeeded.connect(_on_load_succeeded)
     _stream_manager.window_set_loaded.connect(_on_window_set_loaded)
+    _stream_manager.lod_transition_completed.connect(_on_lod_transition_completed)
+    _stream_manager.lod_transition_failed.connect(_on_lod_transition_failed)
     _stream_manager.load_failed.connect(_on_load_failed)
     _stream_manager.unloaded.connect(_on_unloaded)
     _capture_output_path = _argument_value("--capture")
@@ -131,6 +134,13 @@ func _build_technical_ui() -> void:
     _unload_button.pressed.connect(_on_unload_pressed)
     selector_row.add_child(_unload_button)
 
+    _lod_button = Button.new()
+    _lod_button.text = "LOD 0 → 1"
+    _lod_button.custom_minimum_size = Vector2(88.0, 34.0)
+    _lod_button.disabled = true
+    _lod_button.pressed.connect(_on_lod_button_pressed)
+    selector_row.add_child(_lod_button)
+
     _status_label = Label.new()
     _status_label.text = "IDLE  /  no terrain loaded"
     _status_label.add_theme_color_override("font_color", Color(0.83, 0.88, 0.9, 1.0))
@@ -188,11 +198,13 @@ func _on_unload_pressed() -> void:
 
 func _on_load_started(_request_id: int, site_id: String) -> void:
     var site := SiteCatalog.get_site(site_id)
+    _lod_button.disabled = true
     _status_label.text = "LOADING  /  validating %s, then preparing terrain and collision" % String(site["display_name"])
     _unload_button.disabled = false
 
 func _on_load_succeeded(_request_id: int, site_id: String, artifact_id: String, frame_id: String) -> void:
     var site := SiteCatalog.get_site(site_id)
+    _lod_button.disabled = true
     _status_label.text = "LOADED  /  %d × %d samples  /  source-derived elevations" % [int(site["rows"]), int(site["columns"])]
     _detail_label.text = "%s\n%.8f° N  %.8f° W\n%s · artifact %s" % [
         String(site["display_name"]),
@@ -206,16 +218,46 @@ func _on_load_succeeded(_request_id: int, site_id: String, artifact_id: String, 
 
 func _on_window_set_loaded(_request_id: int, site_id: String, window_ids: Array[String], frame_id: String) -> void:
     var site := SiteCatalog.get_site(site_id)
-    _status_label.text = "LOADED  /  %d adjacent windows  /  full-resolution shared-frame mesh" % window_ids.size()
-    _detail_label.text = "%s\n%.8f° N  %.8f° W\n%s · %s\nNeighbor LOD locked at level 0" % [
+    _lod_button.disabled = false
+    _lod_button.text = "LOD 0 → 1"
+    _status_label.text = "LOADED  /  %d adjacent windows  /  shared frame  /  LOD 0" % window_ids.size()
+    _detail_label.text = "%s\n%.8f° N  %.8f° W\n%s · %s\nAdjacent LOD transitions are paired" % [
         String(site["display_name"]),
         float(site["anchor_latitude_deg"]),
         absf(float(site["anchor_longitude_deg"])),
         frame_id,
         ", ".join(window_ids)
     ]
+    if _argument_value("--lod-level") == "1":
+        var transition: Dictionary = _stream_manager.transition_adjacent_lod(1)
+        if not transition.get("ok", false):
+            push_error("Requested runtime LOD 1 transition failed: %s" % String(transition.get("error", "unknown error")))
     if not _capture_output_path.is_empty():
         call_deferred("_capture_runtime_view", _capture_output_path)
+
+func _on_lod_button_pressed() -> void:
+    var target_level := 0 if _stream_manager.current_lod_level == 1 else 1
+    var result: Dictionary = _stream_manager.transition_adjacent_lod(target_level)
+    if not result.get("ok", false):
+        _status_label.text = "LOD transition rejected  /  %s" % String(result.get("error", "unknown error"))
+
+func _on_lod_transition_completed(lod_level: int, max_omitted_sample_deviation_m: float) -> void:
+    _lod_button.text = "LOD 1 → 0" if lod_level == 1 else "LOD 0 → 1"
+    _status_label.text = "LOADED  /  adjacent tiles rebuilt together  /  LOD %d" % lod_level
+    if lod_level == 1:
+        _detail_label.text += "\nLOD 1 collision is disabled in physics\nMax omitted-sample Δ %.6f m (observed crop metric)" % max_omitted_sample_deviation_m
+    else:
+        var site := SiteCatalog.get_site("golden")
+        _detail_label.text = "%s\n%.8f° N  %.8f° W\n%s · golden-west, golden-east\nAdjacent LOD transitions are paired" % [
+            String(site["display_name"]),
+            float(site["anchor_latitude_deg"]),
+            absf(float(site["anchor_longitude_deg"])),
+            String(site["frame_id"])
+        ]
+
+func _on_lod_transition_failed(lod_level: int, message: String) -> void:
+    _status_label.text = "LOD %d transition rejected" % lod_level
+    _detail_label.text = message
 
 
 func _on_load_failed(_request_id: int, site_id: String, message: String) -> void:
@@ -223,6 +265,7 @@ func _on_load_failed(_request_id: int, site_id: String, message: String) -> void
     _detail_label.text = message
 
 func _on_unloaded(_request_id: int) -> void:
+    _lod_button.disabled = true
     _status_label.text = "UNLOADED  /  terrain and collision released"
 
 func _capture_runtime_view(output_path: String) -> void:
