@@ -18,12 +18,12 @@ The generator submodule working directory is intentionally uninitialized in this
 
 ## Bundles used by the consumer
 
-Both generated bundles are under `integration/assets/terrain/`. These are SHA-256 hashes of the exact files tested and rendered.
+Both generated bundles are under `integration/assets/terrain/`. Producer-output manifest hashes below describe the generator's original JSON bytes. Windows autocrlf changes the manifest line endings in the runtime checkout, so the exact checkout size and SHA-256 are shown separately. The conversion preserves JSON semantics and canonical artifact IDs. XY and height payloads remain byte-identical to producer output; their listed lengths and SHA-256 hashes are the exact payload files read and verified by the consumer.
 
-| Site | Source product | EPSG:4269 anchor | Grid | Manifest | XY payload | Height payload |
-|---|---|---|---:|---|---|---|
-| Baltimore, Maryland | `USGS 1/3 Arc Second n40w077 20260512` | `39.28995370377841 N, 76.60995370372139 W` | `216 × 216` | 6,710 bytes; `83DABD1A31BD4442C8DF961BAF1B41179727B43B33E32CBBC793037F7827A76B` | 746,496 bytes; `56D5970D3DA90E5297C216619C5F202FAAA91EC59F2853ED62D5BEAB011C0C87` | 186,624 bytes; `F06C34B1A57D1C6705DEB2BBBF7D848AFABD1728CF0A31911EAC375FFF90E03B` |
-| Golden / Front Range, Colorado | `USGS 1/3 Arc Second n40w106 20260630` | `39.754953704278655 N, 105.21995370310027 W` | `216 × 432` | 6,723 bytes; `A1958FDF9291C0C2782B03DA3E65DC761588786824D884BD5FA245836F45E1E6` | 1,492,992 bytes; `8C39785B6C4FE91CF1497FF134DD3A00E6A45F504FA0B8BAEDDCC8C4C4B5B52D6` | 373,248 bytes; `249A1218475D7191C0D3A3484C5C50BBE6C09C3C39CBEA23903C1FFE3DC85616` |
+| Site | Source product | EPSG:4269 anchor | Grid | Producer-output manifest | Windows runtime manifest | XY payload | Height payload |
+|---|---|---|---:|---|---|---|---|---|
+| Baltimore, Maryland | `USGS 1/3 Arc Second n40w077 20260512` | `39.28995370377841 N, 76.60995370372139 W` | `216 × 216` | 6,710 bytes; producer SHA-256 `83DABD1A31BD4442C8DF961BAF1B41179727B43B33E32CBBC793037F7827A76B` | 6,861 bytes; runtime-checkout SHA-256 `EAA96351560B8E84E7DF80A64C4100287AE102E4BA4A9067EB9DF9500735F70D` | 746,496 bytes; `56D5970D3DA90E5297C216619C5F202FAAA91EC59F2853ED62D5BEAB011C0C87` | 186,624 bytes; `F06C34B1A57D1C6705DEB2BBBF7D848AFABD1728CF0A31911EAC375FFF90E03B` |
+| Golden / Front Range, Colorado | `USGS 1/3 Arc Second n40w106 20260630` | `39.754953704278655 N, 105.21995370310027 W` | `216 × 432` | 6,723 bytes; producer SHA-256 `A1958FDF9291C0C2782B03DA3E65DC761588786824D884BD5FA245836F45E1E6` | 6,874 bytes; runtime-checkout SHA-256 `7E7A413A2446DC5464DBDDBB215143105F009111FCF155B0A79DF6CFE8C014A9` | 1,492,992 bytes; `8C39785B6C4FE91CF1497FF134DD3A00E6A45F504FA0B8BAEDDCC8C4C4B5B52D6` | 373,248 bytes; `249A1218475D7191C0D3A3484C5C50BBE6C09C3C39CBEA23903C1FFE3DC85616` |
 
 The manifest's artifact IDs are `517b4b97207ecde635ef5adb52303d4b3590ff3641254d18123406bfabd129f7` (Baltimore) and `d4b1bb11e84402136f50edf265a66991d8014326378edbeeaa67c4b169e31d98` (Golden). The viewer uses one approved frame per site. It does not mix site-local coordinates.
 
