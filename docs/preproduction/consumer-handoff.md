@@ -1,6 +1,6 @@
 # Gate B/C Godot consumer handoff
 
-**Review state:** The tested consumer commit is rebased onto parent main and the feature branch pins the merged generator revision. The independent Gate C QA review/reproduction and PR approval remain pending. No performance tests or profiling were run.
+**Review state:** Gate C parent PR #2 was QA-approved at head `ac41e39…` and merged into parent main as `bc11b65f90688161e77f69eea7ee37c1186a6b46`. Gate D source-identity work is local on `codex/wf-gate-d-source-allowlist` based on that main revision; independent Gate D review is pending. Publication remains pending direct owner authorization. No Gate D push or PR has been made. No performance tests or profiling were run.
 
 ## Revision pins
 
@@ -106,5 +106,5 @@ The overlay's site selector requests either approved site and its `Unload` butto
 - Both actual renderer meshes and static collision faces derive from the same validated vertices and index order. Upward ray tests hit the same-index terrain sample at each site. Maximum observed engine vertex deviation was `0.000066998796 m` at Baltimore and `0.000084075472 m` at Golden.
 - The manager's finite demand policy is one worker task plus one replaceable latest-site slot. Tests cover rapid toggles, stale-result rejection, unload while decoding, queue clear, reload, active-resource release and scene shutdown.
 - The separate WGS 84 ECEF utility matches independent Rasterio 1.5.2 / GDAL 3.12.2 / PROJ 9.7.1 vectors within 0.1 mm. It allows 1 mm for local-origin reconstruction at Earth-radius magnitudes; the observed maximum was `0.000000000276 m`, a numerical representation result only.
-- This viewer demonstrates two-site selection, load, render, collision and unload. It does not demonstrate adjacent-tile continuity, seam handling, LOD transitions, or engine-wide floating-origin management. The regional terrain path performs no NAD83-to-WGS 84 operation and no NAVD88-to-ellipsoidal-height/geoid conversion. No source accuracy bound or source/geographic accuracy is inferred from floating-point tolerances.
-- The test viewer allowlists these two sites and is not a general open-data browser. It uses no imagery and does not implement gameplay, entity/state/persistence foundations or production streaming policy. Independent Gate C review and QA verdict remain pending.
+- The Gate C viewer demonstrates two-site selection, load, render, collision and unload. Gate C did not demonstrate adjacent-tile continuity, seam handling, LOD transitions, or engine-wide floating-origin management. The regional terrain path performs no NAD83-to-WGS 84 operation and no NAVD88-to-ellipsoidal-height/geoid conversion. No source accuracy bound or source/geographic accuracy is inferred from floating-point tolerances.
+- The test viewer allowlists the two original sites and is not a general open-data browser. It uses no imagery and does not implement gameplay, entity/state/persistence foundations or production streaming policy. Gate C QA is complete and merged; Gate D source-identity review remains pending, and publication is pending direct owner authorization.

@@ -76,9 +76,10 @@ func _run_contract_tests() -> void:
         _decoded_by_site[site_id] = decoded
         var site: Dictionary = decoded["site"]
         var window_ids := SiteCatalog.window_ids(site_id)
-        _check(window_ids.has(String(site["window_id"])) and window_ids.size() == 1, "%s exposes the active default window ID from its window catalog" % site_id)
+        var default_window_id := String(site["window_id"])
+        _check(window_ids.has(default_window_id), "%s exposes its configured default window ID in the site window catalog" % site_id)
         var selected_window := SiteCatalog.get_window(site_id, String(site["window_id"]))
-        _check(selected_window.get("frame_id") == site.get("frame_id") and selected_window.get("source") == site.get("source"), "%s window lookup inherits the approved shared source and frame" % site_id)
+        _check(selected_window.get("window_id") == default_window_id and selected_window.get("frame_id") == site.get("frame_id") and selected_window.get("source") == site.get("source"), "%s default window resolves with the approved shared source and frame" % site_id)
         var manifest: Dictionary = decoded["manifest"]
         _check(decoded["artifact_id"] == site["artifact_id"], "%s artifact ID matches the requested site" % site_id)
         _check(manifest["frame"]["frame_id"] == site["frame_id"], "%s frame ID matches the approved regional frame" % site_id)
