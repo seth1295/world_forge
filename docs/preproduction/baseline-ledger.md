@@ -1,7 +1,7 @@
 # WorldForge Pre-production Baseline Ledger
 
-**Status:** Gate A evidence assembled; independent QA review is pending. No WF-EXIT criterion is marked PASS by this ledger.  
-**Purpose:** Trace current facts, unresolved checks and subsequent gate evidence.  
+**Status (initial baseline snapshot, 2026-10-29):** Gate A evidence was assembled; independent QA review was then pending. No WF-EXIT criterion was marked PASS in this baseline assessment. Current Gate C and Gate D status is in the later review and integration record.
+**Purpose:** Trace the initial baseline, unresolved checks and subsequent gate evidence.
 **Last updated:** 2026-10-30.  
 **Performance:** Excluded from pre-production QA and exit criteria.
 
@@ -26,7 +26,7 @@ The exact parent gitlinks were checked with `git ls-tree HEAD engine/godot world
 - Godot source reconnaissance and the successful Windows build verified Visual Studio Build Tools 2022 17.14.37710.0, MSVC 14.44.35207 and Windows SDK 10.0.26100.0, although `cl` is not on `PATH` and `vswhere` did not list the nonstandard installation. The engine source and tracked files remain unchanged.
 - The pinned engine identifies as Godot 4.8.0 beta and supports `precision=single|double`. Its GDExtension `ResourceFormatLoader`, Resource, `ArrayMesh` and `HeightMapShape3D` APIs appear sufficient for a small consumer; no core engine change is currently justified. This is a source-level finding, not a tested runtime result.
 - No matching Godot executable was found at the configured Godot MCP path. A direct Godot MCP version query failed with `ENOENT`; a reproducible source-built editor is now available under the pinned engine checkout. At this baseline, `integration/` still has no completed consumer project.
-- The connected GitHub integration can read branches and exact commits for all three owned repositories; QA Lead confirmed there were no open PRs. Write, PR creation and platform review permissions remain unverified.
+- Initial snapshot only: the connected GitHub integration could read branches and exact commits for all three owned repositories, and QA Lead confirmed there were no open PRs at that time. Write, PR creation and platform review permissions were unverified at baseline; these observations are not current. See the later review and integration record for Gate C and Gate D status.
 
 ## Pinned Godot Windows build and native tests
 
@@ -128,11 +128,11 @@ Together, these are 13 selected checks of inherited coverage-index parsing, cach
 
 An earlier 13-test attempt using Python's default `TemporaryDirectory` inside the managed sandbox failed six filesystem-backed cases with `WinError 5` while writing to or cleaning up dynamically created temporary directories; the exact cause of that behavior is unresolved. Six pure tests passed in that attempt. A subsequent successful 13-test attempt used `require_escalated`; it is **excluded** from the accepted verification record. The standard-library directory probe, selected reruns and custom workspace temp adapter above succeeded under the default sandbox. No broad test suite ran.
 
-## Mission exit-criteria audit
+## Initial baseline mission exit-criteria assessment (2026-10-29)
 
-All rows remain **NOT VERIFIED** until the cited current-state evidence is produced and independently reviewed. `IN PROGRESS` below describes work state, not completion.
+These rows capture the initial baseline only; they are not the current Gate C or Gate D status. `IN PROGRESS` describes the baseline work state, not completion. Current integration state is recorded below.
 
-| Criterion | Current status | Required evidence |
+| Criterion | Baseline status | Required evidence |
 |---|---|---|
 | WF-EXIT-01 — Correct scope | NOT VERIFIED | Integrated architecture and code audit show standalone WorldForge separation and no BeamNG runtime dependency. |
 | WF-EXIT-02 — Inherited baseline | IN PROGRESS | Source-level capability, gaps, dependency, build/test and licence evidence for exact pinned commits. |
@@ -150,4 +150,4 @@ All rows remain **NOT VERIFIED** until the cited current-state evidence is produ
 
 At the initial baseline snapshot, the Gate A baseline/contract change was tracked in PR #1 on `codex/preproduction-records`; at that time it remained open and unmerged, and a fresh Luna-only independent review and merge approval were pending. This is historical baseline status.
 
-Current state as of 2026-10-30: parent PR #2 head `ac41e39…` was QA-approved and merged into parent main as `bc11b65f90688161e77f69eea7ee37c1186a6b46`. Gate D source-identity work is on local branch `codex/wf-gate-d-source-allowlist`, based on that parent main revision; its QA review is pending. Publication of this Gate D work is pending direct owner authorization. No Gate D push or PR has been made. The default managed command sandbox restricts writes and networking but permits reads outside an individual test directory; QA permits only source-inspected, explicitly scoped test commands under it. Every review record must identify the exact PR/artifact and component SHAs and use the fixed reviewer template.
+Current state as of 2026-10-30: parent PR #2 head `ac41e39…` was QA-approved and merged into parent main as `bc11b65f90688161e77f69eea7ee37c1186a6b46`. Gate D source-identity work is committed locally on `codex/wf-gate-d-source-allowlist` at `5ad6487d7fc78f3b8972544d998e8b81731da3cd`. The adjacent Golden consumer and synchronized LOD follow-up are committed locally on `codex/wf-gate-d-adjacent-consumer` at `41cb237d0aa75d86386cdc7595d7bad5037cabb3`, based on the source-identity commit. They include the two-tile pair, LOD 0→1→0 transition tests and a disabled-physics policy for coarse LOD1 collision. Gate D independent QA review is pending. Publication is pending direct owner authorization; neither Gate D branch has been pushed or opened as a PR. The default managed command sandbox restricts writes and networking but permits reads outside an individual test directory; QA permits only source-inspected, explicitly scoped test commands under it. Every review record must identify the exact PR/artifact and component SHAs and use the fixed reviewer template.

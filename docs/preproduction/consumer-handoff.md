@@ -1,16 +1,20 @@
-# Gate B/C Godot consumer handoff
+# Gate B/C and Gate D Godot consumer handoff
 
-**Review state:** Gate C parent PR #2 was QA-approved at head `ac41e39…` and merged into parent main as `bc11b65f90688161e77f69eea7ee37c1186a6b46`. Gate D source-identity work is local on `codex/wf-gate-d-source-allowlist` based on that main revision; independent Gate D review is pending. Publication remains pending direct owner authorization. No Gate D push or PR has been made. No performance tests or profiling were run.
+**Review state:** Gate C parent PR #2 was QA-approved at head `ac41e39…` and merged into parent main as `bc11b65f90688161e77f69eea7ee37c1186a6b46`. Gate D source-identity commit `5ad6487d7fc78f3b8972544d998e8b81731da3cd` is local on `codex/wf-gate-d-source-allowlist`; adjacent tile/LOD commit `41cb237d0aa75d86386cdc7595d7bad5037cabb3` is local on `codex/wf-gate-d-adjacent-consumer`, based on the source-identity commit. Neither Gate D branch has been pushed or opened as a PR. Independent Gate D review is pending; publication remains pending direct owner authorization. No performance tests or profiling were run.
 
 ## Revision pins
 
 | Component | Exact revision / identity |
 |---|---|
-| Parent integration base | `75ff6fd382c8470d57117c76654073352e114077`; feature branch `codex/wf-vs01-integration` is rebased onto this exact SHA. |
+| Gate C feature-branch base before merge | `75ff6fd382c8470d57117c76654073352e114077`; this is the pre-merge base used by `codex/wf-vs01-integration`, not current parent main. Gate C PR #2 was QA-approved at head `ac41e39…` and merged into parent main as `bc11b65f90688161e77f69eea7ee37c1186a6b46`. |
+| Current parent main for Gate D | `bc11b65f90688161e77f69eea7ee37c1186a6b46` |
+| Local Gate D source-identity commit | `5ad6487d7fc78f3b8972544d998e8b81731da3cd` on `codex/wf-gate-d-source-allowlist` |
+| Local Gate D adjacent-consumer commits | Pair install `5304c625e78d42043c59d3dc9263e2aae0366a7c`; synchronized LOD and final evidence `41cb237d0aa75d86386cdc7595d7bad5037cabb3` on `codex/wf-gate-d-adjacent-consumer` |
 | Godot submodule gitlink | `d7339113911696eac113d77df633c6a2571f1ec0` |
 | Godot executable | `4.8.beta.double.custom_build.d73391139`; executable SHA-256 `FEE4AE8EA772111CE72F2B20F21DC2258C97926B989AA8E2092D337CE28E246B` |
-| Current merged generator and feature gitlink | `6d4cf589a278b5e2eea668c25bc43469f4d45791`; this is the updated `worldgen/beamng-earth` pin. Main Lead reports a 9/9 hardening run against the two real output bundles and identical replay of the outputs. |
+| Current merged generator and parent gitlink | `6d4cf589a278b5e2eea668c25bc43469f4d45791`; this is the merged `worldgen/beamng-earth` pin on parent main. Main Lead reports a 9/9 hardening run against the two original real output bundles and identical replay of those outputs. |
 | Producer commit encoded by these manifests | `635c250cc251d72724edeb4d338240f1344a8c91` |
+| Local producer commit for the adjacent Golden pair | `fc9ff8a605de4cc167a2885eba4c720acd40e92e`; this is a local producer commit, not the parent generator gitlink and not the producer commit in the two original manifests. |
 | Previous parent-base generator gitlink | `06ea781f3d721a11a0ee8ecc4ccfd95b4c32b556`; it predates generator hardening. The feature branch now pins `6d4cf589a278b5e2eea668c25bc43469f4d45791`. |
 | Terrain schema | `urn:worldforge:contract:terrain-grid:1.0.0`; Git blob `87b1423220043d19de9585bae770812f104e3715`; file SHA-256 `EFAA9F53E3EF7FEB1C5B3259730EF82E440540050D7A6E7EDDD5569D9E53EA7A` |
 
@@ -18,14 +22,14 @@ The generator submodule working directory is intentionally uninitialized in this
 
 ## Bundles used by the consumer
 
-Both generated bundles are under `integration/assets/terrain/`. Producer-output manifest hashes below describe the generator's original JSON bytes. Windows autocrlf changes the manifest line endings in the runtime checkout, so the exact checkout size and SHA-256 are shown separately. The conversion preserves JSON semantics and canonical artifact IDs. XY and height payloads remain byte-identical to producer output; their listed lengths and SHA-256 hashes are the exact payload files read and verified by the consumer.
+The original Baltimore and full Golden bundles are under `integration/assets/terrain/baltimore` and `integration/assets/terrain/golden`. Producer-output manifest hashes below describe the generator's original JSON bytes. Windows autocrlf changes those manifest line endings in the runtime checkout, so the exact checkout sizes and SHA-256s are shown separately. The conversion preserves JSON semantics and canonical artifact IDs. XY and height payloads remain byte-identical to producer output; their listed lengths and SHA-256 hashes are the exact payload files read and verified by the consumer. The additional paired Golden bundle hashes and their distinct source windows are listed in the Gate D section below.
 
 | Site | Source product | EPSG:4269 anchor | Grid | Producer-output manifest | Windows runtime manifest | XY payload | Height payload |
 |---|---|---|---:|---|---|---|---|---|
 | Baltimore, Maryland | `USGS 1/3 Arc Second n40w077 20260512` | `39.28995370377841 N, 76.60995370372139 W` | `216 × 216` | 6,710 bytes; producer SHA-256 `83DABD1A31BD4442C8DF961BAF1B41179727B43B33E32CBBC793037F7827A76B` | 6,861 bytes; runtime-checkout SHA-256 `EAA96351560B8E84E7DF80A64C4100287AE102E4BA4A9067EB9DF9500735F70D` | 746,496 bytes; `56D5970D3DA90E5297C216619C5F202FAAA91EC59F2853ED62D5BEAB011C0C87` | 186,624 bytes; `F06C34B1A57D1C6705DEB2BBBF7D848AFABD1728CF0A31911EAC375FFF90E03B` |
 | Golden / Front Range, Colorado | `USGS 1/3 Arc Second n40w106 20260630` | `39.754953704278655 N, 105.21995370310027 W` | `216 × 432` | 6,723 bytes; producer SHA-256 `A1958FDF9291C0C2782B03DA3E65DC761588786824D884BD5FA245836F45E1E6` | 6,874 bytes; runtime-checkout SHA-256 `7E7A413A2446DC5464DBDDBB215143105F009111FCF155B0A79DF6CFE8C014A9` | 1,492,992 bytes; `8C39785B6C4FE91CF1497FF134DD3A00E6A45F504FA0B8BAEDDCC8C4C4B5B52D6` | 373,248 bytes; `249A1218475D7191C0D3A3484C5C50BBE6C09C3C39CBEA23903C1FFE3DC85616` |
 
-The manifest's artifact IDs are `517b4b97207ecde635ef5adb52303d4b3590ff3641254d18123406bfabd129f7` (Baltimore) and `d4b1bb11e84402136f50edf265a66991d8014326378edbeeaa67c4b169e31d98` (Golden). The viewer uses one approved frame per site. It does not mix site-local coordinates.
+The manifest's artifact IDs are `517b4b97207ecde635ef5adb52303d4b3590ff3641254d18123406bfabd129f7` (Baltimore) and `d4b1bb11e84402136f50edf265a66991d8014326378edbeeaa67c4b169e31d98` (Golden default window). The viewer uses one approved frame per site. It does not mix site-local coordinates.
 
 ## Viewer and camera configuration
 
@@ -107,4 +111,79 @@ The overlay's site selector requests either approved site and its `Unload` butto
 - The manager's finite demand policy is one worker task plus one replaceable latest-site slot. Tests cover rapid toggles, stale-result rejection, unload while decoding, queue clear, reload, active-resource release and scene shutdown.
 - The separate WGS 84 ECEF utility matches independent Rasterio 1.5.2 / GDAL 3.12.2 / PROJ 9.7.1 vectors within 0.1 mm. It allows 1 mm for local-origin reconstruction at Earth-radius magnitudes; the observed maximum was `0.000000000276 m`, a numerical representation result only.
 - The Gate C viewer demonstrates two-site selection, load, render, collision and unload. Gate C did not demonstrate adjacent-tile continuity, seam handling, LOD transitions, or engine-wide floating-origin management. The regional terrain path performs no NAD83-to-WGS 84 operation and no NAVD88-to-ellipsoidal-height/geoid conversion. No source accuracy bound or source/geographic accuracy is inferred from floating-point tolerances.
-- The test viewer allowlists the two original sites and is not a general open-data browser. It uses no imagery and does not implement gameplay, entity/state/persistence foundations or production streaming policy. Gate C QA is complete and merged; Gate D source-identity review remains pending, and publication is pending direct owner authorization.
+- The test viewer allowlists the original sites plus the two explicitly cataloged adjacent Golden windows; it is not a general open-data browser. It uses no imagery and does not implement gameplay, entity/state/persistence foundations or production streaming policy. Gate C QA is complete and merged; Gate D independent review of source identity and adjacent LOD work remains pending, and publication awaits direct owner authorization.
+
+## Gate D adjacent Golden tiles and LOD proof
+
+**State:** Gate D source identity is committed locally at `5ad6487d7fc78f3b8972544d998e8b81731da3cd`. The adjacent Golden pair install is at `5304c625e78d42043c59d3dc9263e2aae0366a7c`; its synchronized LOD transition and final evidence are at `41cb237d0aa75d86386cdc7595d7bad5037cabb3`. This local branch is based on parent main `bc11b65f90688161e77f69eea7ee37c1186a6b46`. Terrain Grid v1 schema is unchanged. The parent generator gitlink remains `6d4cf589a278b5e2eea668c25bc43469f4d45791`; the adjacent bundle producer was local generator commit `fc9ff8a605de4cc167a2885eba4c720acd40e92e`. The local producer commit is not pinned by parent and must not be confused with the earlier producer commit `635c250cc251d72724edeb4d338240f1344a8c91` recorded in the original full-window manifests.
+
+The adjacent manifests share `region_id=wf-vs01:golden-front-range`, `frame_id=wf-vs01:golden-grs80-aeqd`, full frame-definition SHA-256 `3059daecf5eba37d0e4f2b12dc4468cf45d9d122b42db44cff7059357d0e94f7`, source TIFF SHA-256 `2a2ac1c4e0e571e5734bafff2b47f0b5cd864ddcb45b69085f0fbad86d44b4ba`, and acquisition receipt `2026-10-29T13:41:19Z`. The catalog keeps the full source identity per window; the adjacent manifests state the receipt-based acquisition time basis.
+
+| Window | Source window `(row offset, column offset, rows, columns)` | Artifact ID | Producer-output manifest | Runtime-checkout manifest tested by Godot | XY payload tested | Height payload tested |
+|---|---|---|---|---|---|---|
+| `golden-west` | `(2544, 8214, 216, 217)` | `f9ac01b194d487e6cfd69ac5b095af5fb6c268b76aaab873a51d515be7953132` | 6,708 bytes; SHA-256 `83CAE258B2A54121B66ACE64ED07DAB96F93B3C61716FF104A6FB535B454A448` | 6,859 bytes; SHA-256 `064801DB4127536C8010B01FCC315687201DD0B62777A7152FC1C43550F61847` | 749,952 bytes; SHA-256 `88D8AD5E760D604AA058461259FF15CE05633FD78611DAF831D28B33802CC8FC` | 187,488 bytes; SHA-256 `D362AC74ACBF8480E8E4CE59722B7C55ED6D0C80D3DB4EF03C88F253C61E1744` |
+| `golden-east` | `(2544, 8430, 216, 216)` | `cbda8c91369c60315a0caff753583ac05df8d1aa25a91208b75fc9df4a7e62c8` | 6,726 bytes; SHA-256 `C1C4BD8977C3CA0A6A13F236AB6ADDA636C43C9B917C41CB79B5C46E71347391` | 6,877 bytes; SHA-256 `335FED054EBE2964F16A48338E2987BD023DDA496FDC4E3BC77C1408754AB19E` | 746,496 bytes; SHA-256 `C8FC55A19D0C5A29A2E4DEFACCE1127D42C60A69FC0C0FF97864B4B47790EB77` | 186,624 bytes; SHA-256 `9F42DA47F3B4059079DA2AF5BF8B686DD28300013E2BD8C5076A041C789FDD26` |
+
+The producer hashes identify original LF JSON output. In the Windows runtime checkout, autocrlf changes each manifest to CRLF and adds 151 bytes; the exact runtime byte counts and hashes above are the files used by Godot. This line-ending conversion preserves JSON semantics and artifact IDs, which the consumer validates. All XY and Float32 height payload files remained byte-identical to producer output and are verified by the consumer hashes above.
+
+## Pair adjacency and collision
+
+The west source samples span absolute source columns 8214–8430; east spans 8430–8645. They share only column 8430: west local column 216 and east local column 0. The two windows have the same 216 rows at source row offset 2544. The decoder requires that relation, the exact same frame and source identity, full-resolution/no-resampling source windows, different artifact IDs, byte-identical Float64 XY and Float32 height records at the shared column, and matching local geometry. The cell strips meet at the shared sample center and do not overlap in area. The manifest footprints use AREA outer pixel edges and overlap by one source-pixel width; this expected metadata overlap is not treated as a mesh seam.
+
+The asynchronous manager decodes and validates one or two windows in its single bounded worker policy. It constructs both candidate render/collision roots before attaching either one, so the pair installs and unloads as a unit. At LOD 0 every source sample is present. At LOD 1 the local row indices are `[0, 2, …, 214, 215]`; west columns are `[0, 2, …, 216]`; east columns are `[0, 2, …, 214, 215]`. These are exact source sample selections: no averaging or height resampling occurs. The final row and outer columns persist, and both coarse meshes retain global source column 8430 exactly.
+
+The viewer's LOD control swaps both neighboring mesh roots in one main-thread operation. Both are always constructed and validated as a pair. The pair's policy is specific to these Golden windows; it is not a global LOD selector or a general tile-streaming policy. LOD 1 has a measured maximum source-index-aligned omitted-sample deviation of **13.497314453 m** for this crop. For every omitted source vertex, the test finds the corresponding coarse cell, uses the mesh's NW–SE diagonal, barycentrically interpolates the aligned point on that coarse triangle in `(E, H−H0, −N)`, and measures Euclidean distance to the omitted vertex. The maximum covers both tiles. This is an observed structural deviation, not an accepted ground-contact threshold, source accuracy, or geographic accuracy.
+
+The level 1 collision shape is created from the same coarse faces as its render mesh, then disabled in Godot physics: `CollisionShape3D.disabled=true`, collision layer `0`, collision mask `0`. Tests verify same-index upward rays cannot hit it. The viewer labels it as disabled, and the manager marks it ineligible for ground contact. **LOD 1 is visual structural data only and must not be used for ground contact.** LOD 0 restores the full source-sampled collision shape and passes same-index upward rays at both interiors and the shared boundary. No player/character grounding is implemented.
+
+## Gate D verification and reproduction
+
+The focused `--test adjacent` suite passed `137/137`. The final full suite passed `232/232`, process exit 0. It includes the original Baltimore and full Golden bundles, full source descriptor mutation rejection, strict v1 validation, WGS 84 geodetic and origin-rebase references, actual mesh/collision tests, async ownership, the two-tile source seam, LOD 0→1→0 swaps, disabled level 1 collision, and level 0 collision readiness. The observed shared vertex delta was `0.000000000000 m`; the observed max omitted-sample deviation was `13.497314453 m`. The retained full log is [`terrain-consumer-gate-d-adjacent-tests.log`](evidence/terrain-consumer-gate-d-adjacent-tests.log), 17,901 bytes, SHA-256 `F40BFA030B7743AAFD1891A82943B45788CCDB176E829A0A944B067CE639BE0F`.
+
+The adjacent runtime camera uses anchor `39.754953704278655° N, 105.21995370310027° W` (manifest source frame EPSG:4269; local coordinates remain in the NAD83/GRS80 Golden AEQD frame), position `(-1198.3306255951975, 118.5, 904.5941632146123) m`, target `(-1714.2119027677074, 364.36767578125, 1099.8264649481891) m`, up `(0, 1, 0)`, FOV `58°`, near `0.5 m`, far `8,000 m`. `look_at(target, Vector3.UP)` sets orientation. Both captures use the 1280×720 window and the same camera.
+
+Set `$RepoRoot`, `$GodotExe` and `$AgentVisionSkillRoot` to the local parent checkout, pinned editor executable, and installed Godot Agent Vision skill directory. These placeholders intentionally avoid personal workstation paths. Each Godot process uses task-local app-data/temp directories:
+
+```powershell
+$RepoRoot = '<PARENT_REPO_ROOT>'
+$GodotExe = '<PINNED_GODOT_EDITOR_EXECUTABLE>'
+$AgentVisionSkillRoot = '<AGENT_VISION_SKILL_ROOT>'
+$Integration = Join-Path $RepoRoot 'integration'
+$TaskTemp = Join-Path $env:TEMP 'wf-gate-d-adjacent'
+$env:APPDATA = Join-Path $TaskTemp 'appdata'
+$env:LOCALAPPDATA = Join-Path $TaskTemp 'localappdata'
+$env:TEMP = Join-Path $TaskTemp 'temp'
+$env:TMP = Join-Path $TaskTemp 'tmp'
+New-Item -ItemType Directory -Force -Path $TaskTemp,$env:APPDATA,$env:LOCALAPPDATA,$env:TEMP,$env:TMP | Out-Null
+
+$TestLog = Join-Path $TaskTemp 'terrain-gate-d-all.log'
+$TestRun = Start-Process -FilePath $GodotExe -ArgumentList @(
+    '--headless','--path',$Integration,'--log-file',$TestLog,'--','--test','all'
+) -PassThru -Wait -WindowStyle Hidden
+if ($TestRun.ExitCode -ne 0) { throw "Godot Gate D suite failed with exit $($TestRun.ExitCode)" }
+Select-String -LiteralPath $TestLog -Pattern 'WF_GOLDEN_ADJACENT_MAX_SHARED_VERTEX_DELTA_M|WF_GOLDEN_ADJACENT_MAX_OMITTED_SAMPLE_DEVIATION_M|WF_TERRAIN_TEST_RESULT'
+
+$CaptureDir = Join-Path $TaskTemp 'captures'
+$Lod0Png = Join-Path $CaptureDir 'golden-adjacent-lod0.png'
+$Lod1Png = Join-Path $CaptureDir 'golden-adjacent-lod1.png'
+$Lod0Log = Join-Path $TaskTemp 'capture-lod0.log'
+$Lod1Log = Join-Path $TaskTemp 'capture-lod1.log'
+$Lod0Run = Start-Process -FilePath $GodotExe -ArgumentList @(
+    '--path',$Integration,'--resolution','1280x720','--windowed','--log-file',$Lod0Log,
+    '--','--tile-set','golden-adjacent','--lod-level','0','--capture',$Lod0Png
+) -PassThru -Wait -WindowStyle Normal
+$Lod1Run = Start-Process -FilePath $GodotExe -ArgumentList @(
+    '--path',$Integration,'--resolution','1280x720','--windowed','--log-file',$Lod1Log,
+    '--','--tile-set','golden-adjacent','--lod-level','1','--capture',$Lod1Png
+) -PassThru -Wait -WindowStyle Normal
+if ($Lod0Run.ExitCode -ne 0 -or $Lod1Run.ExitCode -ne 0) { throw 'A Golden adjacent runtime capture failed' }
+
+$CaptureScript = Join-Path $AgentVisionSkillRoot 'scripts/capture.py'
+$VisionDir = Join-Path $TaskTemp 'vision'
+python $CaptureScript asset --project-root $Integration --paths $Lod0Png --out $VisionDir --short-edge 512 --quality 80 --label golden-adjacent-lod0
+python $CaptureScript asset --project-root $Integration --paths $Lod1Png --out $VisionDir --short-edge 512 --quality 80 --label golden-adjacent-lod1
+```
+
+Godot's one-shot capture waits for at least two process frames and `frame_post_draw`; the PNGs are actual main viewport images from the running project. The raw PNGs remain task-local: LOD 0, 114,238 bytes, SHA-256 `220B7718C9E35944D51A5D3CA00F1B4ABA5A8EA87966FD70CF26A8BAD2782285`; LOD 1, 102,163 bytes, SHA-256 `6804FA65AA4FEE1EFEAE8427E5EA6553959F8C4C23AF5BE2755DFEEB73923CBB`. Agent Vision encoded them at 512 px short edge and quality 80. Retained files are [`terrain-golden-adjacent.webp`](evidence/terrain-golden-adjacent.webp), 11,908 bytes, SHA-256 `9BFF692D12F3970FE3223A3282AD72E3FC560EB4D5885E7CF5BE380286FDC741`, and [`terrain-golden-adjacent-lod1.webp`](evidence/terrain-golden-adjacent-lod1.webp), 13,202 bytes, SHA-256 `CECC5E150B5C76FD80C1277B2FE9FA287B7DE55FC768A4EE58AE79063F9FF264`. The LOD 1 overlay states the collision policy and observed deviation. Taste Receptor Atlas v2 review is [`terrain-golden-adjacent-visual-review.md`](evidence/terrain-golden-adjacent-visual-review.md): 141/144 (97.9%), Grade A, no hard gates; the image does not serve as proof of the seam or physics behavior.
+
+**Limits:** This prototype exercises one specific pair in one crop, two exact-sample levels, and atomic neighbor transitions. It has no distance/error-driven global LOD selector, more-than-two tile installation, world-scale LOD schedule, or player grounding. LOD 1 physics is disabled; use LOD 0 for ground contact. The 13.497314453 m observed sample-aligned coarse deviation is not source accuracy or a ground-contact acceptance threshold. The terrain path still has no NAD83/NAVD88 to WGS 84 or geoid bridge, no engine-wide origin manager, and no source/geographic accuracy claim. Gate C remains QA-approved and merged; Gate D QA review is pending and publication waits on direct owner authorization.
