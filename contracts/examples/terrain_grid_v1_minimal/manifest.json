@@ -1,0 +1,151 @@
+{
+  "artifact_id": "0510e711d4207c51389940cca33a3a8acc9c89da36d6ec03986a29c2614eb7d8",
+  "contract_id": "urn:worldforge:contract:terrain-grid:1.0.0",
+  "frame": {
+    "frame_id": "wf-vs01:example",
+    "horizontal": {
+      "datum": "NAD83",
+      "ellipsoid": "GRS80",
+      "operation_proj_pipeline": "SYNTHETIC_TEST_ONLY_PIPELINE",
+      "projected_axis_order": "easting_northing",
+      "projection_method": "ellipsoidal_azimuthal_equidistant",
+      "projection_wkt2": "SYNTHETIC_TEST_ONLY_WKT2",
+      "realization_epoch": "unspecified_by_source_metadata",
+      "source_axis_order": "longitude_latitude",
+      "source_crs": "EPSG:4269",
+      "unit": "metre"
+    },
+    "origin": {
+      "height_navd88_m": 0.0,
+      "latitude_deg": -5e-05,
+      "longitude_deg": 5e-05,
+      "source_column": 0,
+      "source_product_id": "SYNTHETIC-ONLY",
+      "source_raster_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source_row": 0
+    },
+    "vertical": {
+      "datum": "NAVD88",
+      "height_type": "orthometric",
+      "local_up_expression": "H-H0",
+      "unit": "metre"
+    }
+  },
+  "frame_definition_sha256": "5994afc6d0c0db512eebb63279e1cd0dc8a7aac299294be8c603766a0642340f",
+  "generation": {
+    "created_utc": "2026-10-30T00:00:00Z",
+    "resampling": "none",
+    "source_window": {
+      "column_offset": 0,
+      "columns": 2,
+      "row_offset": 0,
+      "rows": 2
+    },
+    "tool_versions": {
+      "gdal": "example",
+      "proj": "example",
+      "python": "3.12.10",
+      "rasterio": "example"
+    }
+  },
+  "grid": {
+    "columns": 2,
+    "projected_sample_bounds_m": {
+      "crs": "regional_frame",
+      "easting_max": 1.0,
+      "easting_min": -1.0,
+      "frame_id": "wf-vs01:example",
+      "meaning": "sample_centres",
+      "northing_max": 1.0,
+      "northing_min": -1.0
+    },
+    "region_id": "wf-vs01:example",
+    "resampling": "none",
+    "rows": 2,
+    "sample_order": "row_major_north_to_south_west_to_east",
+    "sample_stride": 1,
+    "source_pixel_footprint_bounds": {
+      "crs": "EPSG:4269",
+      "east_deg": 0.0002,
+      "meaning": "outer_pixel_edges",
+      "north_deg": 0.0,
+      "south_deg": -0.0002,
+      "west_deg": 0.0
+    },
+    "source_window": {
+      "column_offset": 0,
+      "columns": 2,
+      "row_offset": 0,
+      "rows": 2
+    }
+  },
+  "payloads": {
+    "height_samples": {
+      "byte_length": 16,
+      "encoding": "ieee754_binary32_le_metres",
+      "path": "height_samples.f32le",
+      "sha256": "4c9c4f354e74153db012329d71c8562ec23e498148174b2c49de58f45d47cdbe"
+    },
+    "horizontal_xy": {
+      "byte_length": 64,
+      "encoding": "ieee754_binary64_le_easting_northing_pairs",
+      "path": "horizontal_xy.f64le",
+      "sha256": "be1b698f0b56f2f1a58a843e6af3845cea6293fcc224cd81c296e1a8ec2623d5"
+    }
+  },
+  "producer": {
+    "commit": "0000000000000000000000000000000000000000",
+    "name": "worldforge-contract-example",
+    "version": "1.0.0"
+  },
+  "source": {
+    "acquired_at_utc": "2026-10-30T00:00:00Z",
+    "acquisition_time_basis": "recorded_download_receipt",
+    "dataset": "contract example",
+    "metadata": {
+      "byte_length": 8,
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "uri": "https://example.invalid/source.xml"
+    },
+    "product_date": "2026-10-30",
+    "product_id": "SYNTHETIC-ONLY",
+    "product_record": {
+      "byte_length": 8,
+      "sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "uri": "https://example.invalid/product.json"
+    },
+    "product_title": "Non-production schema and hash example",
+    "provider": "SYNTHETIC TEST ONLY",
+    "raster": {
+      "affine": {
+        "pixel_height": -0.0001,
+        "pixel_width": 0.0001,
+        "rotation_x": 0,
+        "rotation_y": 0,
+        "x_origin": 0.0,
+        "y_origin": 0.0
+      },
+      "band": 1,
+      "byte_length": 64,
+      "dtype": "float32",
+      "ellipsoid": "GRS80",
+      "height": 4,
+      "horizontal_crs": "EPSG:4269",
+      "horizontal_datum": "NAD83",
+      "nodata_value": -999999.0,
+      "offset": 0,
+      "pixel_interpretation": "area",
+      "realization_epoch": "unspecified_by_source_metadata",
+      "scale": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "vertical_datum": "NAVD88",
+      "vertical_height_type": "orthometric",
+      "vertical_unit": "metre",
+      "width": 4
+    },
+    "rights_statement": "Synthetic test data only; this example grants no data rights.",
+    "snapshot_verified_date": "2026-10-30",
+    "source_uri": "https://example.invalid/source.tif",
+    "uncertainty_statement": "Synthetic test values; no terrain or accuracy claim."
+  }
+}
