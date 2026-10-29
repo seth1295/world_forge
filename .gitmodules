@@ -1,0 +1,6 @@
+[submodule "engine/godot"]
+	path = engine/godot
+	url = https://github.com/godotengine/godot.git
+[submodule "worldgen/beamng-earth"]
+	path = worldgen/beamng-earth
+	url = https://github.com/TecnaGamer/BeamNG.Earth.git
