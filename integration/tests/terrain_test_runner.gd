@@ -7,6 +7,10 @@ const Decoder := preload("res://terrain/bundle_decoder_v1.gd")
 const SiteCatalog := preload("res://terrain/site_catalog_v1.gd")
 const TileFactory := preload("res://terrain/terrain_tile_factory_v1.gd")
 const GeodeticEcef := preload("res://terrain/geodetic_ecef_wgs84_v1.gd")
+const GlobalTileAddress := preload("res://terrain/global_tile_address_v1.gd")
+const GlobalPositionBridge := preload("res://terrain/global_position_bridge_v1.gd")
+const OriginRebase := preload("res://terrain/terrain_origin_rebase_v1.gd")
+const SourceErrorLodPolicy := preload("res://terrain/source_error_lod_policy_v1.gd")
 const StreamManager := preload("res://terrain/terrain_stream_manager_v1.gd")
 const LodBuilder := preload("res://terrain/terrain_lod_builder_v1.gd")
 
@@ -37,6 +41,10 @@ func run_suite(suite_name: String) -> int:
             _run_origin_rebase_tests()
         "rebase":
             _run_origin_rebase_tests()
+        "tile-address":
+            _run_spatial_address_tests()
+        "origin-live":
+            await _run_origin_rebase_scene_tests()
         "collision":
             _run_contract_tests()
             await _run_collision_tests()
@@ -49,11 +57,13 @@ func run_suite(suite_name: String) -> int:
             _run_contract_tests()
             _run_geodetic_tests()
             _run_origin_rebase_tests()
+            _run_spatial_address_tests()
             await _run_collision_tests()
             await _run_lifecycle_tests()
             await _run_adjacent_lifecycle_tests()
+            await _run_origin_rebase_scene_tests()
         _:
-            _check(false, "supported suite name is contracts, geodetic, rebase, collision, lifecycle, adjacent, or all")
+            _check(false, "supported suite name is contracts, geodetic, rebase, tile-address, origin-live, collision, lifecycle, adjacent, or all")
     _report_summary()
     return 1 if _failures > 0 else 0
 
@@ -370,6 +380,322 @@ func _run_origin_rebase_tests() -> void:
                 var height_error := absf(float(reconstructed_geodetic["ellipsoidal_height_m"]) - float(target["height"]))
                 _check(latitude_error <= 0.000000001 and longitude_error <= 0.000000001 and height_error <= 0.001, "%s geodetic location is invariant across local origins within 1 mm numeric error" % target["name"])
     print("WF_REBASE_MAX_ECEF_ERROR_M=%.12f" % max_reconstruction_error_m)
+
+func _run_spatial_address_tests() -> void:
+    var level := 4
+    var references: Array[Dictionary] = [
+        {"name": "equator and prime meridian", "latitude": 0.0, "longitude": 0.0, "key": "wf-cube-quad-v1/f0/l4/x8/y8"},
+        {"name": "antimeridian -180", "latitude": 0.0, "longitude": -180.0, "key": "wf-cube-quad-v1/f1/l4/x8/y8"},
+        {"name": "antimeridian +180 wraps to -180", "latitude": 0.0, "longitude": 180.0, "key": "wf-cube-quad-v1/f1/l4/x8/y8"},
+        {"name": "north pole canonical cell", "latitude": 90.0, "longitude": 0.0, "key": "wf-cube-quad-v1/f4/l4/x8/y8"},
+        {"name": "north pole ignores longitude", "latitude": 90.0, "longitude": 179.0, "key": "wf-cube-quad-v1/f4/l4/x8/y8"},
+        {"name": "south pole canonical cell", "latitude": -90.0, "longitude": 0.0, "key": "wf-cube-quad-v1/f5/l4/x8/y8"},
+        {"name": "south pole ignores longitude", "latitude": -90.0, "longitude": -179.0, "key": "wf-cube-quad-v1/f5/l4/x8/y8"},
+        {"name": "high-latitude antimeridian", "latitude": 80.0, "longitude": -179.5, "key": "wf-cube-quad-v1/f4/l4/x6/y8"},
+        {"name": "southern mid-latitude", "latitude": -60.0, "longitude": 170.0, "key": "wf-cube-quad-v1/f5/l4/x3/y8"},
+        {"name": "Baltimore-area synthetic WGS 84 reference", "latitude": 39.29, "longitude": -76.61, "key": "wf-cube-quad-v1/f3/l4/x9/y1"},
+        {"name": "Golden-area synthetic WGS 84 reference", "latitude": 39.755, "longitude": -105.22, "key": "wf-cube-quad-v1/f3/l4/x5/y1"}
+    ]
+    for reference in references:
+        var address := GlobalTileAddress.address_wgs84(float(reference["latitude"]), float(reference["longitude"]), level)
+        var message := "%s maps to its independently fixed cubed-sphere cell key" % String(reference["name"])
+        if not address.get("ok", false):
+            message += ": " + String(address.get("error", "unknown address error"))
+        _check(address.get("ok", false) and String(address.get("tile_key", "")) == String(reference["key"]), message)
+        if address.get("ok", false):
+            _check(not address.has("source_identity") and not address.has("frame_id") and not address.has("content_revision") and not address.has("runtime_handle"), "%s cell key carries no source, frame, content revision, or runtime resource handle" % String(reference["name"]))
+
+    var same_cell: Dictionary = GlobalTileAddress.address_wgs84(39.29, -76.61, level)
+    var binding_revision_a := same_cell.duplicate(true)
+    binding_revision_a["source_identity"] = "synthetic-source-a"
+    binding_revision_a["frame_id"] = "synthetic-frame-a"
+    binding_revision_a["content_revision"] = "artifact-a"
+    binding_revision_a["runtime_handle"] = 1001
+    var binding_revision_b := same_cell.duplicate(true)
+    binding_revision_b["source_identity"] = "synthetic-source-b"
+    binding_revision_b["frame_id"] = "synthetic-frame-b"
+    binding_revision_b["content_revision"] = "artifact-b"
+    binding_revision_b["runtime_handle"] = 2002
+    _check(GlobalTileAddress.key(binding_revision_a) == GlobalTileAddress.key(binding_revision_b) and GlobalTileAddress.key(binding_revision_a) == String(same_cell["tile_key"]), "cell identity stays fixed when source, frame, content revision, and runtime handle change")
+
+    var parent_result := GlobalTileAddress.parent(same_cell)
+    var children_result := GlobalTileAddress.children(parent_result)
+    var found_child := false
+    if children_result.get("ok", false):
+        for child in children_result["children"]:
+            found_child = found_child or GlobalTileAddress.key(child) == GlobalTileAddress.key(same_cell)
+    _check(parent_result.get("ok", false) and children_result.get("ok", false) and found_child, "quadtree parent/child addresses preserve a cell identity through the selected hierarchy")
+    _check(not GlobalTileAddress.address_wgs84(90.0001, 0.0, level).get("ok", false), "global cell addressing rejects latitude outside WGS 84 geographic bounds")
+    _check(not GlobalTileAddress.address_wgs84(0.0, 180.0001, level).get("ok", false), "global cell addressing rejects longitude outside WGS 84 geographic bounds")
+    _check(not GlobalTileAddress.address_wgs84(0.0, 0.0, GlobalTileAddress.MAX_LEVEL + 1).get("ok", false), "global cell addressing rejects levels outside the stable key domain")
+    _check(not GlobalTileAddress.address_direction(Vector3.ZERO, level).get("ok", false), "global cell addressing rejects a zero direction")
+
+    var synthetic_lod_candidates: Array[Dictionary] = [
+        {"lod_level": 0, "error_known": true, "max_geometric_error_m": 0.0, "collision_eligible": true},
+        {"lod_level": 1, "error_known": true, "max_geometric_error_m": 2.0, "collision_eligible": false},
+        {"lod_level": 2, "error_known": false, "max_geometric_error_m": INF, "collision_eligible": false}
+    ]
+    var detail_lod_result := SourceErrorLodPolicy.select_visual_level(synthetic_lod_candidates, 1.0, 1.0)
+    var coarse_lod_result := SourceErrorLodPolicy.select_visual_level(synthetic_lod_candidates, 10.0, 1.0)
+    _check(detail_lod_result.get("ok", false) and int(detail_lod_result.get("selected_lod_level", -1)) == 0, "source-error LOD policy keeps the source reference when the candidate exceeds the scenario screen-error budget")
+    _check(coarse_lod_result.get("ok", false) and int(coarse_lod_result.get("selected_lod_level", -1)) == 1, "source-error LOD policy may select a measured coarser level when the scenario budget admits it")
+    var unknown_lod_one_result := SourceErrorLodPolicy.select_visual_level([
+        {"lod_level": 0, "error_known": true, "max_geometric_error_m": 0.0},
+        {"lod_level": 1, "error_known": false, "max_geometric_error_m": INF}
+    ], 1.0, 1.0)
+    _check(unknown_lod_one_result.get("ok", false) and int(unknown_lod_one_result.get("selected_lod_level", -1)) == 0, "source-error LOD policy falls back to LOD 0 when the next coarser tile error is unknown")
+    _check(not SourceErrorLodPolicy.select_visual_level([{"lod_level": 0, "error_known": false}], 1.0, 1.0).get("ok", false), "source-error LOD policy fails closed when even the source reference error is unknown")
+    _check(not SourceErrorLodPolicy.select_visual_level([{"lod_level": 1, "error_known": true, "max_geometric_error_m": 0.0}], 1.0, 1.0).get("ok", false), "source-error LOD policy fails closed when no source-reference level is present")
+    var collision_flag_variant := synthetic_lod_candidates.duplicate(true)
+    collision_flag_variant[1]["collision_eligible"] = true
+    var collision_independent_result := SourceErrorLodPolicy.select_visual_level(collision_flag_variant, 10.0, 1.0)
+    _check(collision_independent_result.get("ok", false) and int(collision_independent_result.get("selected_lod_level", -1)) == int(coarse_lod_result.get("selected_lod_level", -2)) and not bool(collision_independent_result.get("collision_eligibility_changed", true)), "visual LOD selection does not infer or alter collision eligibility")
+
+    var cardinal_directions := ["east", "west", "north", "south"]
+    var opposite_direction := {"east": "west", "west": "east", "north": "south", "south": "north"}
+    var count := 1 << 3
+    var edge_checks := 0
+    var edge_failures: Array[String] = []
+    for face in range(6):
+        for index in range(count):
+            var edge_cells: Array[Dictionary] = [
+                {"address": GlobalTileAddress.address_cell(face, 3, 0, index), "direction": "west"},
+                {"address": GlobalTileAddress.address_cell(face, 3, count - 1, index), "direction": "east"},
+                {"address": GlobalTileAddress.address_cell(face, 3, index, 0), "direction": "north"},
+                {"address": GlobalTileAddress.address_cell(face, 3, index, count - 1), "direction": "south"}
+            ]
+            for edge_cell in edge_cells:
+                var neighbor: Dictionary = GlobalTileAddress.neighbor(edge_cell["address"], String(edge_cell["direction"]))
+                var return_direction := String(neighbor.get("reciprocal_direction", opposite_direction[edge_cell["direction"]]))
+                var return_neighbor: Dictionary = GlobalTileAddress.neighbor(neighbor, return_direction) if neighbor.get("ok", false) else {}
+                if not neighbor.get("ok", false) or GlobalTileAddress.key(return_neighbor) != GlobalTileAddress.key(edge_cell["address"]):
+                    edge_failures.append("%s %s -> %s -> %s" % [GlobalTileAddress.key(edge_cell["address"]), String(edge_cell["direction"]), GlobalTileAddress.key(neighbor), GlobalTileAddress.key(return_neighbor)])
+                edge_checks += 1
+    print("WF_CUBE_QUAD_FACE_EDGE_RECIPROCITY_CHECKS=%d" % edge_checks)
+    _check(edge_failures.is_empty(), "all cube-face cardinal edge neighbors are stable and reciprocal")
+    for edge_failure in edge_failures:
+        print("WF_CUBE_QUAD_EDGE_RECIPROCITY_FAILURE=%s" % edge_failure)
+    var central := GlobalTileAddress.address_cell(0, 4, 8, 8)
+    var east := GlobalTileAddress.neighbor(central, "east")
+    var west := GlobalTileAddress.neighbor(central, "west")
+    var north := GlobalTileAddress.neighbor(central, "north")
+    var south := GlobalTileAddress.neighbor(central, "south")
+    _check(GlobalTileAddress.key(east) == "wf-cube-quad-v1/f0/l4/x9/y8" and GlobalTileAddress.key(west) == "wf-cube-quad-v1/f0/l4/x7/y8" and GlobalTileAddress.key(north) == "wf-cube-quad-v1/f0/l4/x8/y7" and GlobalTileAddress.key(south) == "wf-cube-quad-v1/f0/l4/x8/y9", "within-face cardinal neighbors are the expected adjacent cells")
+    var cross_face_references: Array[Dictionary] = [
+        {"face": 0, "direction": "east", "x": 15, "y": 8, "expected": "wf-cube-quad-v1/f2/l4/x0/y8"},
+        {"face": 0, "direction": "west", "x": 0, "y": 8, "expected": "wf-cube-quad-v1/f3/l4/x15/y8"},
+        {"face": 0, "direction": "north", "x": 8, "y": 0, "expected": "wf-cube-quad-v1/f4/l4/x15/y7"},
+        {"face": 0, "direction": "south", "x": 8, "y": 15, "expected": "wf-cube-quad-v1/f5/l4/x15/y8"},
+        {"face": 1, "direction": "east", "x": 15, "y": 8, "expected": "wf-cube-quad-v1/f3/l4/x0/y8"},
+        {"face": 1, "direction": "west", "x": 0, "y": 8, "expected": "wf-cube-quad-v1/f2/l4/x15/y8"},
+        {"face": 1, "direction": "north", "x": 8, "y": 0, "expected": "wf-cube-quad-v1/f4/l4/x0/y8"},
+        {"face": 1, "direction": "south", "x": 8, "y": 15, "expected": "wf-cube-quad-v1/f5/l4/x0/y7"},
+        {"face": 2, "direction": "east", "x": 15, "y": 8, "expected": "wf-cube-quad-v1/f1/l4/x0/y8"},
+        {"face": 2, "direction": "west", "x": 0, "y": 8, "expected": "wf-cube-quad-v1/f0/l4/x15/y8"},
+        {"face": 2, "direction": "north", "x": 8, "y": 0, "expected": "wf-cube-quad-v1/f4/l4/x7/y0"},
+        {"face": 2, "direction": "south", "x": 8, "y": 15, "expected": "wf-cube-quad-v1/f5/l4/x7/y15"},
+        {"face": 3, "direction": "east", "x": 15, "y": 8, "expected": "wf-cube-quad-v1/f0/l4/x0/y8"},
+        {"face": 3, "direction": "west", "x": 0, "y": 8, "expected": "wf-cube-quad-v1/f1/l4/x15/y8"},
+        {"face": 3, "direction": "north", "x": 8, "y": 0, "expected": "wf-cube-quad-v1/f4/l4/x8/y15"},
+        {"face": 3, "direction": "south", "x": 8, "y": 15, "expected": "wf-cube-quad-v1/f5/l4/x8/y0"},
+        {"face": 4, "direction": "east", "x": 15, "y": 8, "expected": "wf-cube-quad-v1/f0/l4/x7/y0"},
+        {"face": 4, "direction": "west", "x": 0, "y": 8, "expected": "wf-cube-quad-v1/f1/l4/x8/y0"},
+        {"face": 4, "direction": "north", "x": 8, "y": 0, "expected": "wf-cube-quad-v1/f2/l4/x7/y0"},
+        {"face": 4, "direction": "south", "x": 8, "y": 15, "expected": "wf-cube-quad-v1/f3/l4/x8/y0"},
+        {"face": 5, "direction": "east", "x": 15, "y": 8, "expected": "wf-cube-quad-v1/f0/l4/x8/y15"},
+        {"face": 5, "direction": "west", "x": 0, "y": 8, "expected": "wf-cube-quad-v1/f1/l4/x7/y15"},
+        {"face": 5, "direction": "north", "x": 8, "y": 0, "expected": "wf-cube-quad-v1/f3/l4/x8/y15"},
+        {"face": 5, "direction": "south", "x": 8, "y": 15, "expected": "wf-cube-quad-v1/f2/l4/x7/y15"}
+    ]
+    for reference in cross_face_references:
+        var source_address := GlobalTileAddress.address_cell(int(reference["face"]), 4, int(reference["x"]), int(reference["y"]))
+        var mapped_neighbor := GlobalTileAddress.neighbor(source_address, String(reference["direction"]))
+        _check(GlobalTileAddress.key(mapped_neighbor) == String(reference["expected"]), "face %d %s edge maps to its independently fixed neighboring face cell" % [int(reference["face"]), String(reference["direction"])])
+
+    var baltimore_conversion := GlobalPositionBridge.terrain_local_to_wgs84_ecef("baltimore", Vector3.ZERO)
+    var golden_conversion := GlobalPositionBridge.terrain_local_to_wgs84_ecef("golden", Vector3.ZERO)
+    _check(not baltimore_conversion.get("ok", true) and String(baltimore_conversion.get("status", "")) == "unavailable" and String(baltimore_conversion.get("source_frame_id", "")) == String(SiteCatalog.get_site("baltimore")["frame_id"]), "Baltimore NAD83/GRS80 + NAVD88 source-to-global conversion is explicitly unavailable")
+    _check(not golden_conversion.get("ok", true) and String(golden_conversion.get("status", "")) == "unavailable" and String(golden_conversion.get("source_frame_id", "")) == String(SiteCatalog.get_site("golden")["frame_id"]), "Golden NAD83/GRS80 + NAVD88 source-to-global conversion is explicitly unavailable")
+    _check(String(baltimore_conversion.get("operation_id", "not-empty")) == "" and String(golden_conversion.get("operation_id", "not-empty")) == "", "no unverified datum or geoid operation is invented for either real terrain region")
+
+func _run_origin_rebase_scene_tests() -> void:
+    var origin := OriginRebase.new()
+    origin.name = "TerrainOriginRebaseFixture"
+    add_child(origin)
+    var manager: TerrainStreamManagerV1 = StreamManager.new()
+    manager.name = "GoldenTerrainStreamManager"
+    origin.add_child(manager)
+    var load_errors: Array[String] = []
+    manager.load_failed.connect(func(_request_id: int, _site_id: String, message: String) -> void: load_errors.append(message))
+    var initial_request := manager.request_window_set("golden", ["golden-west", "golden-east"])
+    await _wait_for_window_set(manager, ["golden-west", "golden-east"])
+    var load_detail := "no load errors" if load_errors.is_empty() else "; ".join(load_errors)
+    _check(manager.loaded_site_id == "golden" and manager.get_loaded_tile_count() == 2, "live origin fixture loads two real Golden terrain windows asynchronously: %s" % load_detail)
+    _check(initial_request > 0, "live origin fixture preserves the actual terrain request identity")
+    if manager.get_loaded_tile_count() != 2:
+        manager.unload()
+        manager.queue_free()
+        origin.queue_free()
+        await get_tree().process_frame
+        return
+
+    var west_tile := manager.get_loaded_tile("golden-west")
+    var east_tile := manager.get_loaded_tile("golden-east")
+    var west_vertices: PackedVector3Array = (west_tile.get_node("TerrainSurface") as MeshInstance3D).mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+    var east_vertices: PackedVector3Array = (east_tile.get_node("TerrainSurface") as MeshInstance3D).mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+    var west_rows: Array = west_tile.get_meta("source_row_indices")
+    var west_columns: Array = west_tile.get_meta("source_column_indices")
+    var east_columns: Array = east_tile.get_meta("source_column_indices")
+    var sample_row := int(west_rows.size() / 2)
+    var west_width := west_columns.size()
+    var east_width := east_columns.size()
+    var west_probe: Vector3 = west_vertices[sample_row * west_width + west_width - 2]
+    var east_probe: Vector3 = east_vertices[sample_row * east_width + 1]
+    var west_seam: Vector3 = west_vertices[sample_row * west_width + west_width - 1]
+    var east_seam: Vector3 = east_vertices[sample_row * east_width]
+    _check(west_seam == east_seam, "live origin fixture begins from the actual installed Golden shared source sample")
+
+    var camera := Camera3D.new()
+    camera.name = "OriginFixtureCamera"
+    camera.position = west_probe + Vector3(0.0, 25.0, 40.0)
+    origin.add_child(camera)
+    camera.look_at(west_probe, Vector3.UP)
+    var test_object := StaticBody3D.new()
+    test_object.name = "OriginFixtureSpatialObject"
+    test_object.set_meta("object_id", "wf-test:golden-origin-fixture")
+    test_object.position = west_probe + Vector3(0.0, 1.0, 0.0)
+    test_object.collision_layer = 2
+    test_object.collision_mask = 0
+    var object_shape := CollisionShape3D.new()
+    var sphere := SphereShape3D.new()
+    sphere.radius = 0.25
+    object_shape.shape = sphere
+    test_object.add_child(object_shape)
+    origin.add_child(test_object)
+    var durable_camera_position := camera.position
+    var durable_object_position := test_object.position
+    var durable_window_ids := manager.loaded_window_ids
+    var durable_tile_ids: Array[String] = []
+    var durable_content_revisions: Array[String] = []
+    var durable_frame_ids: Array[String] = []
+    var durable_source_ids: Array[String] = []
+    var pre_rebase_handles: Dictionary = {}
+    for window_id in durable_window_ids:
+        var tile := manager.get_loaded_tile(window_id)
+        durable_tile_ids.append(String(tile.get_meta("regional_tile_id", "")))
+        durable_content_revisions.append(String(tile.get_meta("content_revision", "")))
+        durable_frame_ids.append(String(tile.get_meta("spatial_reference_id", "")))
+        durable_source_ids.append(String(tile.get_meta("source_identity", "")))
+        pre_rebase_handles[window_id] = tile.get_instance_id()
+
+    var stale_manager: TerrainStreamManagerV1 = StreamManager.new()
+    stale_manager.name = "StaleCompletionFixtureManager"
+    origin.add_child(stale_manager)
+    var stale_rejections: Array[Dictionary] = []
+    stale_manager.stale_result_rejected.connect(func(request_id: int, site_id: String, artifact_id: String, current_request_id: int) -> void:
+        stale_rejections.append({"request_id": request_id, "site_id": site_id, "artifact_id": artifact_id, "current_request_id": current_request_id})
+    )
+    stale_manager.request_site("baltimore")
+    stale_manager.request_window_set("golden", ["golden-west", "golden-east"])
+    await _wait_for_window_set(stale_manager, ["golden-west", "golden-east"])
+    _check(stale_rejections.size() == 1 and int(stale_rejections[0]["request_id"]) < int(stale_rejections[0]["current_request_id"]), "stale Baltimore worker completion is rejected while primary Golden terrain remains active")
+    _check(manager.loaded_window_ids == durable_window_ids and manager.get_loaded_tile_count() == 2, "stale request on a second scene manager does not replace active Golden terrain identity")
+    stale_manager.unload()
+    stale_manager.queue_free()
+    await get_tree().process_frame
+
+    var collision_ray := RayCast3D.new()
+    collision_ray.name = "RebasedTerrainCollisionRay"
+    collision_ray.collision_mask = 1
+    collision_ray.collide_with_areas = false
+    collision_ray.collide_with_bodies = true
+    collision_ray.hit_back_faces = true
+    origin.add_child(collision_ray)
+    var tile_bodies: Array[StaticBody3D] = [west_tile.get_node("TerrainCollision"), east_tile.get_node("TerrainCollision")]
+    var origins: Array[Vector3] = [
+        Vector3.ZERO,
+        Vector3(1250.0, 0.0, -750.0),
+        Vector3(-2400.0, 0.0, 1800.0),
+        Vector3(25000.0, 0.0, -40000.0),
+        Vector3(-100000.0, 0.0, 100000.0),
+        Vector3.ZERO
+    ]
+    var previous_generation := origin.origin_generation
+    var max_camera_reconstruction_error_m := 0.0
+    var max_object_reconstruction_error_m := 0.0
+    for next_origin in origins:
+        var rebase_result: Dictionary = origin.rebase_to_frame_position(next_origin)
+        await get_tree().physics_frame
+        await get_tree().physics_frame
+        var camera_frame_position := origin.scene_world_to_frame(camera.global_position)
+        var object_frame_position := origin.scene_world_to_frame(test_object.global_position)
+        var camera_error := camera_frame_position.distance_to(durable_camera_position)
+        var object_error := object_frame_position.distance_to(durable_object_position)
+        max_camera_reconstruction_error_m = maxf(max_camera_reconstruction_error_m, camera_error)
+        max_object_reconstruction_error_m = maxf(max_object_reconstruction_error_m, object_error)
+        _check(rebase_result.get("ok", false) and int(rebase_result["origin_generation"]) == previous_generation + 1, "scene origin rebase increments its generation for the active terrain set")
+        _check(camera_error <= 0.001 and object_error <= 0.001, "camera and diagnostic object durable frame positions remain within 1 mm after live scene-root translation")
+        _check(manager.loaded_window_ids == durable_window_ids, "active terrain window IDs remain unchanged through repeated scene rebases")
+        for index in range(durable_window_ids.size()):
+            var tile := manager.get_loaded_tile(durable_window_ids[index])
+            _check(String(tile.get_meta("regional_tile_id", "")) == durable_tile_ids[index] and String(tile.get_meta("content_revision", "")) == durable_content_revisions[index] and String(tile.get_meta("spatial_reference_id", "")) == durable_frame_ids[index] and String(tile.get_meta("source_identity", "")) == durable_source_ids[index], "regional tile ID, source, frame, and content identity stay fixed during rebase")
+            _check(tile.get_instance_id() == int(pre_rebase_handles[durable_window_ids[index]]), "render/collision resource handle stays attached to the same tile between LOD transitions")
+        await _check_rebased_terrain_ray(collision_ray, origin, west_probe, tile_bodies, "Golden west tile sample after rebase")
+        await _check_rebased_terrain_ray(collision_ray, origin, east_probe, tile_bodies, "Golden east tile sample after rebase")
+        await _check_rebased_terrain_ray(collision_ray, origin, west_seam, tile_bodies, "Golden shared seam sample after rebase")
+        previous_generation = origin.origin_generation
+    print("WF_SCENE_REBASE_MAX_CAMERA_FRAME_ERROR_M=%.12f" % max_camera_reconstruction_error_m)
+    print("WF_SCENE_REBASE_MAX_OBJECT_FRAME_ERROR_M=%.12f" % max_object_reconstruction_error_m)
+
+    var lod_one_result: Dictionary = manager.transition_adjacent_lod(1)
+    _check(lod_one_result.get("ok", false) and manager.current_lod_level == 1, "live Golden neighbor set switches to the paired LOD 1 representation under the rebased scene root")
+    _check(manager.loaded_window_ids == durable_window_ids, "paired LOD representation change preserves regional tile IDs")
+    var lod_one_west := manager.get_loaded_tile("golden-west")
+    var lod_one_east := manager.get_loaded_tile("golden-east")
+    _check(lod_one_west != null and lod_one_east != null and lod_one_west.get_instance_id() != int(pre_rebase_handles["golden-west"]) and lod_one_east.get_instance_id() != int(pre_rebase_handles["golden-east"]), "LOD replacement changes volatile Godot resource handles without changing tile identity")
+    _check(String(lod_one_west.get_meta("content_revision", "")) == durable_content_revisions[0] and String(lod_one_east.get_meta("content_revision", "")) == durable_content_revisions[1], "LOD representation change retains the same source content revisions")
+    var lod_one_west_shape: CollisionShape3D = lod_one_west.get_node("TerrainCollision/TerrainTriangles")
+    var lod_one_east_shape: CollisionShape3D = lod_one_east.get_node("TerrainCollision/TerrainTriangles")
+    var lod_one_bodies: Array[StaticBody3D] = [lod_one_west.get_node("TerrainCollision"), lod_one_east.get_node("TerrainCollision")]
+    _check(lod_one_west_shape.disabled and lod_one_east_shape.disabled and lod_one_bodies[0].collision_layer == 0 and lod_one_bodies[1].collision_layer == 0, "LOD 1 collision stays disabled while origin rebasing is active")
+    collision_ray.position = west_probe + Vector3(0.0, -50.0, 0.0)
+    collision_ray.target_position = Vector3(0.0, 100.0, 0.0)
+    await get_tree().physics_frame
+    collision_ray.force_raycast_update()
+    _check(not collision_ray.is_colliding(), "coarse LOD collision cannot cause a contact jump after rebase")
+    var lod_zero_result: Dictionary = manager.transition_adjacent_lod(0)
+    _check(lod_zero_result.get("ok", false) and manager.current_lod_level == 0 and manager.ground_contact_collision_eligible, "live Golden neighbors return to source-sampled collision-eligible LOD 0")
+    var lod_zero_west := manager.get_loaded_tile("golden-west")
+    var lod_zero_east := manager.get_loaded_tile("golden-east")
+    var lod_zero_bodies: Array[StaticBody3D] = [lod_zero_west.get_node("TerrainCollision"), lod_zero_east.get_node("TerrainCollision")]
+    await _check_rebased_terrain_ray(collision_ray, origin, west_probe, lod_zero_bodies, "Golden west LOD 0 after rebase")
+    await _check_rebased_terrain_ray(collision_ray, origin, east_probe, lod_zero_bodies, "Golden east LOD 0 after rebase")
+    await _check_rebased_terrain_ray(collision_ray, origin, west_seam, lod_zero_bodies, "Golden shared LOD 0 seam after rebase")
+
+    var unload_id := manager.unload()
+    _check(unload_id > initial_request and manager.get_loaded_tile_count() == 0 and manager.loaded_window_ids.is_empty() and manager.get_children().is_empty(), "unload under the rebased root detaches both terrain and collision nodes and invalidates the prior request")
+    await get_tree().physics_frame
+    _check(manager.get_active_worker_count() == 0 and manager.get_queued_request_count() == 0, "live rebase unload leaves no pending decoder task or queued request")
+    manager.queue_free()
+    await get_tree().process_frame
+    _check(not is_instance_valid(manager), "scene manager shuts down cleanly after live rebases and unload")
+    origin.queue_free()
+    await get_tree().process_frame
+    _check(not is_instance_valid(origin), "origin root shuts down cleanly after its terrain, camera, object, and ray are released")
+
+func _check_rebased_terrain_ray(ray: RayCast3D, origin: TerrainOriginRebaseV1, expected_frame_position: Vector3, allowed_bodies: Array[StaticBody3D], description: String) -> void:
+    ray.position = expected_frame_position + Vector3(0.0, -50.0, 0.0)
+    ray.target_position = Vector3(0.0, 100.0, 0.0)
+    ray.enabled = true
+    await get_tree().physics_frame
+    ray.force_raycast_update()
+    await get_tree().physics_frame
+    _check(ray.is_colliding(), "%s collision is ready after scene rebase" % description)
+    if ray.is_colliding():
+        var collider: Object = ray.get_collider()
+        _check(allowed_bodies.has(collider), "%s ray hits one of the intended real terrain collision bodies" % description)
+        var durable_hit := origin.scene_world_to_frame(ray.get_collision_point())
+        _check(durable_hit.distance_to(expected_frame_position) <= 0.001, "%s collision hit reconstructs to its unchanged terrain sample within 1 mm" % description)
 func _run_collision_tests() -> void:
     for site_id in SiteCatalog.site_ids():
         if not _decoded_by_site.has(site_id):
@@ -497,6 +823,12 @@ func _run_adjacent_lifecycle_tests() -> void:
         manager.queue_free()
         await get_tree().process_frame
         return
+
+    var strict_visual_lod := manager.select_adjacent_visual_lod(0.1, 1.0)
+    var permissive_visual_lod := manager.select_adjacent_visual_lod(1000.0, 1.0)
+    _check(strict_visual_lod.get("ok", false) and int(strict_visual_lod.get("selected_lod_level", -1)) == 0 and float(strict_visual_lod.get("maximum_source_error_m", -1.0)) > 0.0, "real Golden source-error policy keeps LOD 0 for the stricter synthetic camera scenario")
+    _check(permissive_visual_lod.get("ok", false) and int(permissive_visual_lod.get("selected_lod_level", -1)) == 1 and float(permissive_visual_lod.get("maximum_source_error_m", -1.0)) > 0.0, "real Golden source-error policy selects LOD 1 only for the permissive synthetic camera scenario")
+    _check(manager.current_lod_level == 0 and manager.ground_contact_collision_eligible and bool(strict_visual_lod.get("collision_eligibility_current", false)), "visual LOD recommendations do not transition the active terrain or change its collision eligibility")
 
     var pair: Dictionary = _decoded_by_site["golden-adjacent"]
     var decoded_windows: Array[Dictionary] = pair["windows"]

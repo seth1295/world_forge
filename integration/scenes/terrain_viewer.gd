@@ -2,6 +2,7 @@ extends Node3D
 
 const SiteCatalog := preload("res://terrain/site_catalog_v1.gd")
 const TestRunner := preload("res://tests/terrain_test_runner.gd")
+const OriginRebase := preload("res://terrain/terrain_origin_rebase_v1.gd")
 
 @onready var _stream_manager: TerrainStreamManagerV1 = $TerrainStreamManager
 
@@ -12,6 +13,9 @@ var _detail_label: Label
 var _unload_button: Button
 var _lod_button: Button
 var _capture_output_path := ""
+var _origin_root: TerrainOriginRebaseV1
+var _origin_demo_enabled := false
+var _origin_demo_started := false
 
 func _ready() -> void:
     var test_suite := _argument_value("--test")
@@ -20,6 +24,7 @@ func _ready() -> void:
         return
     _create_view_environment()
     _build_technical_ui()
+    _configure_origin_root()
     _stream_manager.load_started.connect(_on_load_started)
     _stream_manager.load_succeeded.connect(_on_load_succeeded)
     _stream_manager.window_set_loaded.connect(_on_window_set_loaded)
@@ -28,6 +33,7 @@ func _ready() -> void:
     _stream_manager.load_failed.connect(_on_load_failed)
     _stream_manager.unloaded.connect(_on_unloaded)
     _capture_output_path = _argument_value("--capture")
+    _origin_demo_enabled = OS.get_cmdline_user_args().has("--origin-rebase-demo")
     var requested_site := "golden-adjacent" if _argument_value("--tile-set") == "golden-adjacent" else _argument_value("--site")
     if not SiteCatalog.SITES.has(requested_site) and requested_site != "golden-adjacent":
         requested_site = "baltimore"
@@ -68,6 +74,15 @@ func _create_view_environment() -> void:
     _camera.near = 0.5
     _camera.far = 8000.0
     add_child(_camera)
+
+func _configure_origin_root() -> void:
+    _origin_root = OriginRebase.new()
+    _origin_root.name = "RegionalTerrainOriginRoot"
+    add_child(_origin_root)
+    remove_child(_stream_manager)
+    remove_child(_camera)
+    _origin_root.add_child(_stream_manager)
+    _origin_root.add_child(_camera)
 
 func _build_technical_ui() -> void:
     var canvas := CanvasLayer.new()
@@ -232,6 +247,96 @@ func _on_window_set_loaded(_request_id: int, site_id: String, window_ids: Array[
         var transition: Dictionary = _stream_manager.transition_adjacent_lod(1)
         if not transition.get("ok", false):
             push_error("Requested runtime LOD 1 transition failed: %s" % String(transition.get("error", "unknown error")))
+    if _origin_demo_enabled and not _origin_demo_started:
+        _origin_demo_started = true
+        call_deferred("_run_origin_rebase_demo")
+    elif not _capture_output_path.is_empty():
+        call_deferred("_capture_runtime_view", _capture_output_path)
+
+func _run_origin_rebase_demo() -> void:
+    if _origin_root == null or _stream_manager.get_loaded_tile_count() != 2:
+        push_error("Origin runtime demonstration requires the loaded adjacent Golden terrain pair")
+        get_tree().quit(5)
+        return
+    var durable_window_ids := _stream_manager.loaded_window_ids
+    var durable_camera_frame_position := _origin_root.scene_world_to_frame(_camera.global_position)
+    var durable_camera_basis := _camera.global_basis
+    var tile_handles: Dictionary = {}
+    var west_tile := _stream_manager.get_loaded_tile("golden-west")
+    var east_tile := _stream_manager.get_loaded_tile("golden-east")
+    if west_tile == null or east_tile == null:
+        push_error("Origin runtime demonstration could not find both Golden terrain windows")
+        get_tree().quit(5)
+        return
+    tile_handles["golden-west"] = west_tile.get_instance_id()
+    tile_handles["golden-east"] = east_tile.get_instance_id()
+
+    var west_vertices: PackedVector3Array = (west_tile.get_node("TerrainSurface") as MeshInstance3D).mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+    var east_vertices: PackedVector3Array = (east_tile.get_node("TerrainSurface") as MeshInstance3D).mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+    var west_columns: Array = west_tile.get_meta("source_column_indices")
+    var east_columns: Array = east_tile.get_meta("source_column_indices")
+    var west_rows: Array = west_tile.get_meta("source_row_indices")
+    var row := int(west_rows.size() / 2)
+    var west_probe: Vector3 = west_vertices[row * west_columns.size() + west_columns.size() - 2]
+    var east_probe: Vector3 = east_vertices[row * east_columns.size() + 1]
+    var west_seam: Vector3 = west_vertices[row * west_columns.size() + west_columns.size() - 1]
+    var east_seam: Vector3 = east_vertices[row * east_columns.size()]
+    if west_seam != east_seam:
+        push_error("Origin runtime demonstration found a nonidentical source-sample seam")
+        get_tree().quit(6)
+        return
+
+    var ray := RayCast3D.new()
+    ray.name = "OriginRuntimeCollisionProbe"
+    ray.collision_mask = 1
+    ray.collide_with_areas = false
+    ray.collide_with_bodies = true
+    ray.hit_back_faces = true
+    _origin_root.add_child(ray)
+    var bodies: Array[StaticBody3D] = [west_tile.get_node("TerrainCollision"), east_tile.get_node("TerrainCollision")]
+    var rebases: Array[Vector3] = [
+        Vector3(850.0, 0.0, -450.0),
+        Vector3(-2200.0, 0.0, 1700.0),
+        Vector3(15000.0, 0.0, -25000.0),
+        Vector3(-80000.0, 0.0, 90000.0),
+        Vector3.ZERO
+    ]
+    var failures: Array[String] = []
+    for target_origin in rebases:
+        var result: Dictionary = _origin_root.rebase_to_frame_position(target_origin)
+        await get_tree().physics_frame
+        await get_tree().physics_frame
+        var reconstructed_camera := _origin_root.scene_world_to_frame(_camera.global_position)
+        if not result.get("ok", false) or reconstructed_camera.distance_to(durable_camera_frame_position) > 0.001 or _camera.global_basis != durable_camera_basis:
+            failures.append("camera durable pose changed after rebase generation %d" % _origin_root.origin_generation)
+        if _stream_manager.loaded_window_ids != durable_window_ids:
+            failures.append("regional tile identities changed after rebase generation %d" % _origin_root.origin_generation)
+        for window_id in durable_window_ids:
+            var tile := _stream_manager.get_loaded_tile(window_id)
+            if tile == null or tile.get_instance_id() != int(tile_handles[window_id]):
+                failures.append("runtime tile handle changed without an LOD transition after rebase generation %d" % _origin_root.origin_generation)
+        for probe in [west_probe, east_probe, west_seam]:
+            ray.position = probe + Vector3(0.0, -50.0, 0.0)
+            ray.target_position = Vector3(0.0, 100.0, 0.0)
+            await get_tree().physics_frame
+            ray.force_raycast_update()
+            if not ray.is_colliding():
+                failures.append("terrain collision was unavailable after rebase generation %d" % _origin_root.origin_generation)
+            else:
+                var collision_body: Object = ray.get_collider()
+                var durable_hit := _origin_root.scene_world_to_frame(ray.get_collision_point())
+                if not bodies.has(collision_body) or durable_hit.distance_to(probe) > 0.001:
+                    failures.append("terrain collision moved or switched tile at source sample after rebase generation %d" % _origin_root.origin_generation)
+    ray.queue_free()
+    if not failures.is_empty():
+        for failure in failures:
+            push_error("WF_ORIGIN_RUNTIME_FAILURE=%s" % failure)
+        print("WF_ORIGIN_RUNTIME_RESULT=FAIL generations=%d failures=%d" % [_origin_root.origin_generation, failures.size()])
+        get_tree().quit(7)
+        return
+    _status_label.text = "LOADED  /  live scene origin rebases verified  /  LOD %d" % _stream_manager.current_lod_level
+    _detail_label.text += "\nFive scene-root rebases; tile IDs and source-sampled collision stayed fixed"
+    print("WF_ORIGIN_RUNTIME_RESULT=PASS generations=%d region=Golden/Front-Range windows=%s" % [_origin_root.origin_generation, ",".join(durable_window_ids)])
     if not _capture_output_path.is_empty():
         call_deferred("_capture_runtime_view", _capture_output_path)
 

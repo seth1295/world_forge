@@ -43,6 +43,16 @@ static func create_tile(decoded: Dictionary, lod_policy: String = "single_window
     root.set_meta("region_id", decoded["manifest"]["grid"]["region_id"])
     root.set_meta("frame_id", decoded["manifest"]["frame"]["frame_id"])
     root.set_meta("artifact_id", decoded["artifact_id"])
+    # The approved NAD83/NAVD88 source frame has no compatible global operation yet.
+    # Keep a stable region-window identity, source identity, frame, and content revision
+    # separate; do not synthesize a WGS 84 address from the source chart coordinates.
+    root.set_meta("regional_tile_id", "wf-regional-window-v1/%s/%s" % [String(decoded["manifest"]["grid"]["region_id"]), window_id])
+    root.set_meta("tile_identity_scheme", "wf-regional-window-v1")
+    var source: Dictionary = decoded["manifest"]["source"]
+    var raster: Dictionary = source["raster"]
+    root.set_meta("source_identity", "%s/%s" % [String(source["product_id"]), String(raster["sha256"])])
+    root.set_meta("spatial_reference_id", String(decoded["manifest"]["frame"]["frame_id"]))
+    root.set_meta("content_revision", String(decoded["artifact_id"]))
     root.set_meta("lod_level", lod_level)
     root.set_meta("sample_stride", int(lod_geometry["sample_stride"]))
     root.set_meta("edge_sample_policy", "preserve_final_row_and_column")

@@ -14,6 +14,7 @@ const Decoder := preload("res://terrain/bundle_decoder_v1.gd")
 const SiteCatalog := preload("res://terrain/site_catalog_v1.gd")
 const TileFactory := preload("res://terrain/terrain_tile_factory_v1.gd")
 const LodBuilder := preload("res://terrain/terrain_lod_builder_v1.gd")
+const LodPolicy := preload("res://terrain/source_error_lod_policy_v1.gd")
 const MAX_IN_FLIGHT_WORKERS := 1
 
 var _request_sequence := 0
@@ -41,6 +42,44 @@ var current_lod_level: int:
 var ground_contact_collision_eligible: bool:
     get:
         return not _active_tiles.is_empty() and _current_lod_level == 0
+
+## Recommend one visual level for the active paired windows from their measured source
+## sample error and scenario-provided camera scale/budget. This does not transition LOD
+## and does not change the independent contact-collision policy.
+func select_adjacent_visual_lod(metres_per_pixel: float, max_error_pixels: float) -> Dictionary:
+    if _active_decoded_windows.size() != 2 or _active_tiles.size() != 2:
+        return {"ok": false, "selected_lod_level": -1, "error": "visual LOD policy requires an installed adjacent window pair"}
+    var level_one_geometries: Array[Dictionary] = []
+    var maximum_source_error_m := 0.0
+    var level_one_error_known := true
+    var coarse_lod_unavailable_reason := ""
+    for decoded_window in _active_decoded_windows:
+        var geometry := LodBuilder.build(decoded_window, 1)
+        if not geometry.get("ok", false):
+            level_one_error_known = false
+            coarse_lod_unavailable_reason = String(geometry.get("error", "LOD 1 source error could not be measured"))
+            break
+        var error_m := float(geometry.get("max_omitted_sample_deviation_m", INF))
+        if not is_finite(error_m) or error_m < 0.0:
+            level_one_error_known = false
+            coarse_lod_unavailable_reason = "LOD 1 source geometric error is unknown or invalid"
+            break
+        maximum_source_error_m = maxf(maximum_source_error_m, error_m)
+        level_one_geometries.append(geometry)
+    if level_one_error_known:
+        var seam_result := LodBuilder.validate_adjacent_pair(level_one_geometries[0], level_one_geometries[1])
+        if not seam_result.get("ok", false):
+            level_one_error_known = false
+            coarse_lod_unavailable_reason = String(seam_result.get("error", "adjacent LOD seam validation failed"))
+    var candidates: Array[Dictionary] = [
+        {"lod_level": 0, "error_known": true, "max_geometric_error_m": 0.0, "collision_eligible": true},
+        {"lod_level": 1, "error_known": level_one_error_known, "max_geometric_error_m": maximum_source_error_m, "collision_eligible": false}
+    ]
+    var result := LodPolicy.select_visual_level(candidates, metres_per_pixel, max_error_pixels)
+    result["maximum_source_error_m"] = maximum_source_error_m
+    result["collision_eligibility_current"] = ground_contact_collision_eligible
+    result["coarse_lod_unavailable_reason"] = coarse_lod_unavailable_reason
+    return result
 
 func _ready() -> void:
     set_process(true)

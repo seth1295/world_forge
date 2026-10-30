@@ -1,0 +1,5 @@
+Godot Engine v4.8.beta.double.custom_build.d73391139 (2026-10-29 07:26:32 UTC) - https://godotengine.org
+ERROR: Failed to read the root certificate store.
+   at: OS_Windows::get_system_ca_certificates (platform\windows\os_windows.cpp:2618)
+WF_ORIGIN_RUNTIME_RESULT=PASS generations=5 region=Golden/Front-Range windows=golden-west,golden-east
+WF_RUNTIME_CAPTURE_PNG=docs/preproduction/evidence/terrain-golden-origin-rebase.png
