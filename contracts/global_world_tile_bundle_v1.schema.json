@@ -1416,8 +1416,36 @@
             "required": ["status"]
           },
           "then": {
-            "required": ["pixel_count"],
-            "properties": { "payloads": { "minItems": 1 } }
+            "required": ["pixel_count"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": { "const": "ready" },
+              "pixel_count": { "minimum": 1 }
+            },
+            "required": ["status", "pixel_count"]
+          },
+          "then": { "properties": { "payloads": { "minItems": 1 } } }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": { "const": "ready" },
+              "pixel_count": { "const": 0 }
+            },
+            "required": ["status", "pixel_count"]
+          },
+          "then": {
+            "required": ["disclosure"],
+            "properties": {
+              "payloads": { "maxItems": 0 },
+              "coverage": {
+                "required": ["query_bounds_wgs84"],
+                "properties": { "query_bounds_wgs84": { "$ref": "#/$defs/tile_bounds" } }
+              }
+            }
           }
         }
       ]
