@@ -69,6 +69,8 @@ This slice does not establish full-Earth dataset coverage, global feature comple
 
 ## Gate D/E local technical proofs (2026-10-30)
 
+Global frame/LOD design choices and their evidence limits are summarized in [planetary-spatial-design.md](planetary-spatial-design.md). The design keeps WGS 84 numeric tests separate from the untransformed NAD83/GRS80 + NAVD88 terrain sources.
+
 The local handoff branch retains the Gate C real-data terrain pipeline and adds the following pre-production evidence:
 
 - Main Lead reran generator head 325cd2c from the verified USGS snapshots: both `--region both` and `--region golden-tiles` completed; the focused suite passed 16/16. All four payload hashes and artifact IDs match the checked-in terrain bundles; the crop-specific GRS80 checks are numerical transformation checks, not source accuracy.
