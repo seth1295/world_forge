@@ -14,6 +14,7 @@
     "simulation_clock",
     "spatial_references",
     "objects",
+    "operation_records",
     "tombstones"
   ],
   "properties": {
@@ -52,6 +53,13 @@
       "type": "array",
       "items": {
         "$ref": "#/$defs/world_object"
+      }
+    },
+    "operation_records": {
+      "description": "Versioned provenance metadata referenced by object positions. These records identify endpoints and an opaque operation method/version; they do not define or execute a coordinate transform.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/operation_record"
       }
     },
     "tombstones": {
@@ -214,10 +222,9 @@
               ]
             },
             "coordinate_epoch": {
-              "type": [
-                "number",
-                "null"
-              ]
+              "type": ["number", "null"],
+              "minimum": -1.7976931348623157e308,
+              "maximum": 1.7976931348623157e308
             }
           },
           "allOf": [
@@ -339,6 +346,81 @@
               "maxLength": 64
             }
           }
+        },
+        "axis_domains": {
+          "description": "Optional inclusive per-axis coordinate domains. Omission declares no additional frame-specific numeric bounds.",
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "$ref": "#/$defs/axis_domain"
+          }
+        }
+      }
+    },
+    "axis_domain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["axis_name", "minimum", "maximum"],
+      "properties": {
+        "axis_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "minimum": {
+          "type": "number",
+          "minimum": -1.7976931348623157e308,
+          "maximum": 1.7976931348623157e308
+        },
+        "maximum": {
+          "type": "number",
+          "minimum": -1.7976931348623157e308,
+          "maximum": 1.7976931348623157e308
+        }
+      }
+    },
+    "operation_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_id",
+        "schema_version",
+        "operation_method_id",
+        "operation_version",
+        "source_frame_id",
+        "target_frame_id"
+      ],
+      "properties": {
+        "record_id": {
+          "type": "string",
+          "pattern": "^urn:worldforge:operation:[A-Za-z0-9._~:/-]+$",
+          "maxLength": 255
+        },
+        "schema_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "operation_method_id": {
+          "type": "string",
+          "pattern": "^urn:worldforge:operation-method:[A-Za-z0-9._~:/-]+$",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "operation_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "source_frame_id": {
+          "type": "string",
+          "pattern": "^urn:worldforge:spatial-frame:[A-Za-z0-9._~:-]+$",
+          "maxLength": 255
+        },
+        "target_frame_id": {
+          "type": "string",
+          "pattern": "^urn:worldforge:spatial-frame:[A-Za-z0-9._~:-]+$",
+          "maxLength": 255
         }
       }
     },
@@ -361,16 +443,19 @@
           "minItems": 3,
           "maxItems": 3,
           "items": {
-            "type": "number"
+            "type": "number",
+            "minimum": -1.7976931348623157e308,
+            "maximum": 1.7976931348623157e308
           }
         },
         "operation_record_ids": {
-          "description": "Ordered immutable provenance references for CRS/datum operations used to create these coordinates; empty only for coordinates already authoritative in this frame.",
+          "description": "Ordered references to operation_records in this snapshot; empty only for coordinates already authoritative in this frame.",
           "type": "array",
           "maxItems": 16,
           "items": {
             "type": "string",
-            "pattern": "^urn:worldforge:operation:[A-Za-z0-9._~:/-]+$"
+            "pattern": "^urn:worldforge:operation:[A-Za-z0-9._~:/-]+$",
+            "maxLength": 255
           }
         }
       }

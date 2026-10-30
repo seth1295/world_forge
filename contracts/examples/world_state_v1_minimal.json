@@ -53,6 +53,7 @@
       "components": []
     }
   ],
+  "operation_records": [],
   "tombstones": [
     {
       "object_id": "urn:worldforge:object:fixture:synthetic-retired-02",
