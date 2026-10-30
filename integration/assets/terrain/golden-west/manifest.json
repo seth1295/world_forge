@@ -33,7 +33,7 @@
   },
   "frame_definition_sha256": "3059daecf5eba37d0e4f2b12dc4468cf45d9d122b42db44cff7059357d0e94f7",
   "generation": {
-    "created_utc": "2026-10-29T20:46:57Z",
+    "created_utc": "2026-10-30T01:25:37Z",
     "resampling": "none",
     "source_window": {
       "column_offset": 8214,
@@ -94,7 +94,7 @@
     }
   },
   "producer": {
-    "commit": "fc9ff8a605de4cc167a2885eba4c720acd40e92e",
+    "commit": "325cd2c4048bc9cf19a2287afc4de51c145f4490",
     "name": "WorldForge Terrain Grid Producer",
     "version": "1.0.0"
   },

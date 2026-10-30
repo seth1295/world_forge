@@ -168,7 +168,8 @@ func _run_adjacent_window_validation_tests() -> void:
     decoder.decode_window_set("golden", _repository_root, ids)
     var result: Dictionary = decoder.result
     var decoded_ok := bool(result.get("ok", false))
-    _check(decoded_ok, "producer-generated Golden west/east bundles validate as one adjacent window set: %s" % String(result.get("error", "")))
+    var decode_detail := "accepted" if decoded_ok else "rejected: %s" % String(result.get("error", "unknown"))
+    _check(decoded_ok, "producer-generated Golden west/east bundles validate as one adjacent window set: %s" % decode_detail)
     if not decoded_ok:
         return
     _decoded_by_site["golden-adjacent"] = result
@@ -488,8 +489,9 @@ func _run_adjacent_lifecycle_tests() -> void:
     _check(manager.get_active_worker_count() <= 1 and manager.get_queued_request_count() <= 1, "adjacent window-set decode obeys the bounded worker/latest-request policy")
     await _wait_for_window_set(manager, ["golden-west", "golden-east"])
     var loaded_ids: Array[String] = manager.loaded_window_ids
-    _check(manager.loaded_site_id == "golden" and loaded_ids == ["golden-west", "golden-east"], "one request atomically installs both adjacent Golden windows in canonical order: %s" % "; ".join(load_errors))
-    _check(manager.get_loaded_tile_count() == 2 and installed_sets.size() == 1, "the complete pair emits one install event and owns exactly two terrain tiles: %s" % "; ".join(load_errors))
+    var load_detail := "no load errors" if load_errors.is_empty() else "; ".join(load_errors)
+    _check(manager.loaded_site_id == "golden" and loaded_ids == ["golden-west", "golden-east"], "one request atomically installs both adjacent Golden windows in canonical order: %s" % load_detail)
+    _check(manager.get_loaded_tile_count() == 2 and installed_sets.size() == 1, "the complete pair emits one install event and owns exactly two terrain tiles: %s" % load_detail)
     if manager.get_loaded_tile_count() != 2 or not _decoded_by_site.has("golden-adjacent"):
         manager.unload()
         manager.queue_free()
@@ -526,7 +528,8 @@ func _run_adjacent_lifecycle_tests() -> void:
         await _check_upward_terrain_ray(seam_west, [west_body, east_body], null, "shared adjacent tile boundary")
 
         var lod_one_result: Dictionary = manager.transition_adjacent_lod(1)
-        _check(lod_one_result.get("ok", false) and manager.current_lod_level == 1, "one command switches both adjacent tiles together from LOD 0 to LOD 1: %s" % String(lod_one_result.get("error", "")))
+        var lod_detail := "accepted" if lod_one_result.get("ok", false) else "rejected: %s" % String(lod_one_result.get("error", "unknown"))
+        _check(lod_one_result.get("ok", false) and manager.current_lod_level == 1, "one command switches both adjacent tiles together from LOD 0 to LOD 1: %s" % lod_detail)
         _check(not bool(lod_one_result.get("ground_contact_collision_eligible", true)) and not manager.ground_contact_collision_eligible, "LOD 1 collision is explicitly ineligible for ground-level contact")
         var lod_one_west: Dictionary = LodBuilder.build(west_decoded, 1)
         var lod_one_east: Dictionary = LodBuilder.build(east_decoded, 1)

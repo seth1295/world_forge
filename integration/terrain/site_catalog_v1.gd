@@ -3,7 +3,7 @@ extends RefCounted
 
 const PRODUCER_NAME := "WorldForge Terrain Grid Producer"
 const PRODUCER_VERSION := "1.0.0"
-const PRODUCER_COMMIT := "635c250cc251d72724edeb4d338240f1344a8c91"
+const PRODUCER_COMMIT := "325cd2c4048bc9cf19a2287afc4de51c145f4490"
 
 # Each site owns one source-raster identity and one regional frame. Its keyed windows
 # can grow to adjacent source windows while reusing those identities; each window has
@@ -16,13 +16,13 @@ const SITES := {
         "frame_id": "wf-vs01:baltimore-grs80-aeqd",
         "frame_definition_sha256": "4edb7c5ddcb889c8617622c43a31faecbd0ecc567acfd70f721af4ee86456e54",
         "producer": {
-            "commit": "635c250cc251d72724edeb4d338240f1344a8c91",
+            "commit": "325cd2c4048bc9cf19a2287afc4de51c145f4490",
             "name": "WorldForge Terrain Grid Producer",
             "version": "1.0.0",
         },
         "source": {
             "acquired_at_utc": "2026-10-29T13:34:02Z",
-            "acquisition_time_basis": "filesystem_creation_time",
+            "acquisition_time_basis": "recorded_download_receipt",
             "dataset": "3D Elevation Program (3DEP), 1/3 arc-second bare-earth elevation",
             "metadata": {
                 "byte_length": 12960,
@@ -100,13 +100,13 @@ const SITES := {
         "frame_id": "wf-vs01:golden-grs80-aeqd",
         "frame_definition_sha256": "3059daecf5eba37d0e4f2b12dc4468cf45d9d122b42db44cff7059357d0e94f7",
         "producer": {
-            "commit": "635c250cc251d72724edeb4d338240f1344a8c91",
+            "commit": "325cd2c4048bc9cf19a2287afc4de51c145f4490",
             "name": "WorldForge Terrain Grid Producer",
             "version": "1.0.0",
         },
         "source": {
             "acquired_at_utc": "2026-10-29T13:41:19Z",
-            "acquisition_time_basis": "filesystem_creation_time",
+            "acquisition_time_basis": "recorded_download_receipt",
             "dataset": "3D Elevation Program (3DEP), 1/3 arc-second bare-earth elevation",
             "metadata": {
                 "byte_length": 12962,
@@ -182,7 +182,7 @@ const SITES := {
                 "columns": 217,
                 "source_window": {"row_offset": 2544, "column_offset": 8214, "rows": 216, "columns": 217},
                 "source_overrides": {"acquisition_time_basis": "recorded_download_receipt"},
-                "producer": {"name": "WorldForge Terrain Grid Producer", "version": "1.0.0", "commit": "fc9ff8a605de4cc167a2885eba4c720acd40e92e"},
+                "producer": {"name": "WorldForge Terrain Grid Producer", "version": "1.0.0", "commit": "325cd2c4048bc9cf19a2287afc4de51c145f4490"},
                 "camera_position_local_m": Vector3(-1198.3306255951975, 118.5, 904.5941632146123),
                 "camera_target_local_m": Vector3(-1714.2119027677074, 364.36767578125, 1099.8264649481891),
             },
@@ -193,7 +193,7 @@ const SITES := {
                 "columns": 216,
                 "source_window": {"row_offset": 2544, "column_offset": 8430, "rows": 216, "columns": 216},
                 "source_overrides": {"acquisition_time_basis": "recorded_download_receipt"},
-                "producer": {"name": "WorldForge Terrain Grid Producer", "version": "1.0.0", "commit": "fc9ff8a605de4cc167a2885eba4c720acd40e92e"},
+                "producer": {"name": "WorldForge Terrain Grid Producer", "version": "1.0.0", "commit": "325cd2c4048bc9cf19a2287afc4de51c145f4490"},
                 "camera_position_local_m": Vector3(-1198.3306255951975, 118.5, 904.5941632146123),
                 "camera_target_local_m": Vector3(-1714.2119027677074, 364.36767578125, 1099.8264649481891),
             },
