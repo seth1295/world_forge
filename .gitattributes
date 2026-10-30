@@ -1,6 +1,8 @@
 integration/features/golden_roads_v1.json -text
 integration/features/fixtures/golden_dem_sample_vector_v1.json -text
 integration/assets/terrain/**/manifest.json -text
+contracts/roads_feature_collection_v1.schema.json -text
+docs/preproduction/evidence/terrain-consumer-gate-d-contracts.log -text
 docs/preproduction/evidence/terrain-consumer-gate-d-tests.log -text
 docs/preproduction/evidence/terrain-consumer-gate-d-adjacent-tests.log -text
 docs/preproduction/evidence/roads-feature-python-tests.log -text

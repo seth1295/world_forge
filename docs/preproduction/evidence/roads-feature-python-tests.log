@@ -1,5 +1,14 @@
+Command: python -m unittest -v test_roads_feature_v1
+Working directory: integration/features
+Environment: Windows; Python 3.12.10; rasterio 1.5.2
+WF_CENSUS_ROADS_ZIP: official retained Census 2026 roads archive
+WF_ROADS_BUILD_TEST_DIR: dedicated task-local temporary directory
+
 test_clipping_keeps_exact_crop_intersections (test_roads_feature_v1.RoadsFeatureContractTests.test_clipping_keeps_exact_crop_intersections) ... ok
+test_each_input_path_is_rejected_as_either_destination_before_io (test_roads_feature_v1.RoadsFeatureContractTests.test_each_input_path_is_rejected_as_either_destination_before_io) ... ok
 test_geometry_is_clipped_finite_two_dimensional_and_resampled (test_roads_feature_v1.RoadsFeatureContractTests.test_geometry_is_clipped_finite_two_dimensional_and_resampled) ... ok
+test_input_hardlink_alias_is_rejected_before_io_when_supported (test_roads_feature_v1.RoadsFeatureContractTests.test_input_hardlink_alias_is_rejected_before_io_when_supported) ... ok
+test_input_symlink_alias_is_rejected_before_io_when_supported (test_roads_feature_v1.RoadsFeatureContractTests.test_input_symlink_alias_is_rejected_before_io_when_supported) ... skipped 'file symlinks are unavailable: WinError 1314, privilege not held'
 test_known_terrain_sample_projection_and_height (test_roads_feature_v1.RoadsFeatureContractTests.test_known_terrain_sample_projection_and_height) ... ok
 test_mutated_pinned_terrain_manifest_is_rejected_before_parse (test_roads_feature_v1.RoadsFeatureContractTests.test_mutated_pinned_terrain_manifest_is_rejected_before_parse) ... ok
 test_mutated_pinned_terrain_payload_is_rejected_before_sampling (test_roads_feature_v1.RoadsFeatureContractTests.test_mutated_pinned_terrain_payload_is_rejected_before_sampling) ... ok
@@ -14,6 +23,8 @@ test_source_zip_bytes_and_component_hashes_when_available (test_roads_feature_v1
 test_versioned_contract_reuses_exact_golden_frame (test_roads_feature_v1.RoadsFeatureContractTests.test_versioned_contract_reuses_exact_golden_frame) ... ok
 
 ----------------------------------------------------------------------
-Ran 14 tests in 1.160s
+Ran 17 tests in 5.101s
 
-OK
+OK (skipped=1)
+
+Run result: exit_code=0

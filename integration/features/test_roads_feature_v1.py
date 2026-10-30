@@ -7,6 +7,7 @@ import math
 import os
 import struct
 import unittest
+import uuid
 import zipfile
 from pathlib import Path
 from unittest.mock import patch
@@ -297,17 +298,14 @@ class RoadsFeatureContractTests(unittest.TestCase):
                     mutated_payload.unlink(missing_ok=True)
 
     def test_output_aliases_are_rejected_before_any_write(self) -> None:
-        archive_path = os.environ.get("WF_CENSUS_ROADS_ZIP", "")
         output_directory = os.environ.get("WF_ROADS_BUILD_TEST_DIR", "")
-        if not archive_path or not output_directory:
-            self.skipTest("Set source ZIP and task-local output directory to exercise output-path rejection")
+        if not output_directory:
+            self.skipTest("Set WF_ROADS_BUILD_TEST_DIR to a task-local output directory for path rejection")
         directory = Path(output_directory)
         directory.mkdir(parents=True, exist_ok=True)
+        input_paths, sentinels = self._write_sentinel_inputs(directory, "output_alias")
         alias_parent = directory / "output_alias_parent"
         alias_parent.mkdir(exist_ok=True)
-        manifest = TERRAIN_DIR / "manifest.json"
-        horizontal = TERRAIN_DIR / "horizontal_xy.f64le"
-        heights = TERRAIN_DIR / "height_samples.f32le"
         sentinel = b"pre-existing output must remain unchanged\n"
 
         existing_output = directory / "aliased_existing_output.json"
@@ -321,29 +319,23 @@ class RoadsFeatureContractTests(unittest.TestCase):
         hardlink_source.write_bytes(sentinel)
         try:
             with self.subTest(alias="normalized-existing"):
-                with self.assertRaisesRegex(ValueError, "must resolve to different files"):
-                    build_output(
-                        Path(archive_path), manifest, horizontal, heights,
-                        existing_output, existing_vector_alias,
-                    )
+                with patch.object(Path, "open", side_effect=AssertionError("file I/O preceded alias rejection")):
+                    with self.assertRaisesRegex(ValueError, "must resolve to different files"):
+                        build_output(*input_paths, existing_output, existing_vector_alias)
                 self.assertEqual(existing_output.read_bytes(), sentinel)
 
             with self.subTest(alias="normalized-missing"):
                 self.assertFalse(missing_output.exists())
-                with self.assertRaisesRegex(ValueError, "must resolve to different files"):
-                    build_output(
-                        Path(archive_path), manifest, horizontal, heights,
-                        missing_output, missing_vector_alias,
-                    )
+                with patch.object(Path, "open", side_effect=AssertionError("file I/O preceded alias rejection")):
+                    with self.assertRaisesRegex(ValueError, "must resolve to different files"):
+                        build_output(*input_paths, missing_output, missing_vector_alias)
                 self.assertFalse(missing_output.exists())
 
             with self.subTest(alias="hardlink-existing"):
                 os.link(hardlink_source, hardlink_alias)
-                with self.assertRaisesRegex(ValueError, "must resolve to different files"):
-                    build_output(
-                        Path(archive_path), manifest, horizontal, heights,
-                        hardlink_source, hardlink_alias,
-                    )
+                with patch.object(Path, "open", side_effect=AssertionError("file I/O preceded alias rejection")):
+                    with self.assertRaisesRegex(ValueError, "must resolve to different files"):
+                        build_output(*input_paths, hardlink_source, hardlink_alias)
                 self.assertEqual(hardlink_source.read_bytes(), sentinel)
                 self.assertEqual(hardlink_alias.read_bytes(), sentinel)
         finally:
@@ -352,6 +344,132 @@ class RoadsFeatureContractTests(unittest.TestCase):
             hardlink_alias.unlink(missing_ok=True)
             hardlink_source.unlink(missing_ok=True)
             alias_parent.rmdir()
+
+        for path, expected_bytes in zip(input_paths, sentinels):
+            self.assertEqual(path.read_bytes(), expected_bytes)
+            path.unlink(missing_ok=True)
+
+    def _write_sentinel_inputs(
+        self,
+        directory: Path,
+        prefix: str,
+    ) -> tuple[tuple[Path, ...], tuple[bytes, ...]]:
+        names = (
+            f"{prefix}_census_roads.zip",
+            f"{prefix}_terrain_manifest.json",
+            f"{prefix}_horizontal_xy.f64le",
+            f"{prefix}_height_samples.f32le",
+        )
+        paths = tuple(directory / name for name in names)
+        sentinels = tuple(f"task-local {prefix} input {index}\n".encode() for index in range(4))
+        for path, sentinel_bytes in zip(paths, sentinels):
+            path.write_bytes(sentinel_bytes)
+        return paths, sentinels
+
+    def test_each_input_path_is_rejected_as_either_destination_before_io(self) -> None:
+        output_directory = os.environ.get("WF_ROADS_BUILD_TEST_DIR", "")
+        if not output_directory:
+            self.skipTest("Set WF_ROADS_BUILD_TEST_DIR to a task-local directory for alias regressions")
+        directory = Path(output_directory)
+        directory.mkdir(parents=True, exist_ok=True)
+        prefix = f"roads_input_alias_{uuid.uuid4().hex}"
+        input_paths, sentinels = self._write_sentinel_inputs(directory, prefix)
+        alias_parent = directory / f"{prefix}_parent"
+        alias_parent.mkdir()
+        try:
+            for input_index, input_path in enumerate(input_paths):
+                # A lexical .. alias exercises normalization after resolving the
+                # task-local path, without pointing at any retained source data.
+                aliased_input = alias_parent / ".." / input_path.name
+                for destination in ("feature", "vector"):
+                    with self.subTest(input=input_path.name, destination=destination):
+                        feature_path = (
+                            aliased_input
+                            if destination == "feature"
+                            else directory / f"{prefix}_feature_{input_index}.json"
+                        )
+                        vector_path = (
+                            aliased_input
+                            if destination == "vector"
+                            else directory / f"{prefix}_vector_{input_index}.json"
+                        )
+                        with patch.object(
+                            Path,
+                            "open",
+                            side_effect=AssertionError("build_output performed file I/O before alias rejection"),
+                        ):
+                            with self.assertRaisesRegex(ValueError, "input path"):
+                                build_output(*input_paths, feature_path, vector_path)
+
+                        self.assertEqual(input_path.read_bytes(), sentinels[input_index])
+                        if destination == "feature":
+                            self.assertFalse(vector_path.exists())
+                        else:
+                            self.assertFalse(feature_path.exists())
+        finally:
+            alias_parent.rmdir()
+            for input_path in input_paths:
+                input_path.unlink(missing_ok=True)
+
+    def test_input_symlink_alias_is_rejected_before_io_when_supported(self) -> None:
+        output_directory = os.environ.get("WF_ROADS_BUILD_TEST_DIR", "")
+        if not output_directory:
+            self.skipTest("Set WF_ROADS_BUILD_TEST_DIR to a task-local directory for alias regressions")
+        directory = Path(output_directory)
+        directory.mkdir(parents=True, exist_ok=True)
+        prefix = f"roads_input_symlink_{uuid.uuid4().hex}"
+        input_paths, sentinels = self._write_sentinel_inputs(directory, prefix)
+        symlink_path = directory / f"{prefix}_census_alias.zip"
+        vector_path = directory / f"{prefix}_vector_output.json"
+        try:
+            try:
+                symlink_path.symlink_to(input_paths[0])
+            except (NotImplementedError, OSError) as error:
+                winerror = getattr(error, "winerror", None)
+                if winerror == 1314:
+                    self.skipTest(
+                        "file symlinks are unavailable: WinError 1314, privilege not held"
+                    )
+                self.skipTest("file symlinks are unavailable in this task environment")
+
+            with patch.object(Path, "open", side_effect=AssertionError("file I/O preceded alias rejection")):
+                with self.assertRaisesRegex(ValueError, "input path"):
+                    build_output(*input_paths, symlink_path, vector_path)
+            self.assertEqual(input_paths[0].read_bytes(), sentinels[0])
+            self.assertFalse(vector_path.exists())
+        finally:
+            symlink_path.unlink(missing_ok=True)
+            vector_path.unlink(missing_ok=True)
+            for input_path in input_paths:
+                input_path.unlink(missing_ok=True)
+
+    def test_input_hardlink_alias_is_rejected_before_io_when_supported(self) -> None:
+        output_directory = os.environ.get("WF_ROADS_BUILD_TEST_DIR", "")
+        if not output_directory:
+            self.skipTest("Set WF_ROADS_BUILD_TEST_DIR to a task-local directory for alias regressions")
+        directory = Path(output_directory)
+        directory.mkdir(parents=True, exist_ok=True)
+        prefix = f"roads_input_hardlink_{uuid.uuid4().hex}"
+        input_paths, sentinels = self._write_sentinel_inputs(directory, prefix)
+        hardlink_path = directory / f"{prefix}_manifest_alias.json"
+        feature_path = directory / f"{prefix}_feature_output.json"
+        try:
+            try:
+                os.link(input_paths[1], hardlink_path)
+            except (NotImplementedError, OSError) as error:
+                self.skipTest(f"file hardlinks are unavailable in this task environment: {error}")
+
+            with patch.object(Path, "open", side_effect=AssertionError("file I/O preceded alias rejection")):
+                with self.assertRaisesRegex(ValueError, "input path"):
+                    build_output(*input_paths, feature_path, hardlink_path)
+            self.assertEqual(input_paths[1].read_bytes(), sentinels[1])
+            self.assertEqual(hardlink_path.read_bytes(), sentinels[1])
+            self.assertFalse(feature_path.exists())
+        finally:
+            hardlink_path.unlink(missing_ok=True)
+            feature_path.unlink(missing_ok=True)
+            for input_path in input_paths:
+                input_path.unlink(missing_ok=True)
 
     def test_rebuilt_output_matches_committed_bytes_when_archive_available(self) -> None:
         archive_path = os.environ.get("WF_CENSUS_ROADS_ZIP", "")

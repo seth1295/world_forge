@@ -80,27 +80,45 @@ def read_bounded_file(
     return buffer
 
 
-def require_distinct_output_paths(output_path: Path, vector_path: Path) -> None:
-    """Reject destinations that refer to the same normalized or existing file."""
+def require_distinct_output_paths(
+    output_path: Path,
+    vector_path: Path,
+    input_paths: tuple[Path, ...],
+) -> None:
+    """Reject output aliases with each other or with any input file."""
+    paths = (output_path, vector_path, *input_paths)
     try:
-        resolved_output = output_path.expanduser().resolve(strict=False)
-        resolved_vector = vector_path.expanduser().resolve(strict=False)
+        resolved_paths = tuple(path.expanduser().resolve(strict=False) for path in paths)
     except (OSError, RuntimeError) as error:
         raise ValueError("feature output paths cannot be resolved safely") from error
 
-    normalized_output = os.path.normcase(os.path.normpath(os.fspath(resolved_output)))
-    normalized_vector = os.path.normcase(os.path.normpath(os.fspath(resolved_vector)))
-    if normalized_output == normalized_vector:
-        raise ValueError("feature collection and test-vector output paths must resolve to different files")
+    normalized_paths = tuple(
+        os.path.normcase(os.path.normpath(os.fspath(path))) for path in resolved_paths
+    )
 
-    try:
-        if resolved_output.exists() and resolved_vector.exists() and os.path.samefile(
-            resolved_output,
-            resolved_vector,
-        ):
-            raise ValueError("feature collection and test-vector output paths must resolve to different files")
-    except OSError as error:
-        raise ValueError("feature output paths could not be verified as distinct files") from error
+    def aliases(left_index: int, right_index: int) -> bool:
+        if normalized_paths[left_index] == normalized_paths[right_index]:
+            return True
+        left = resolved_paths[left_index]
+        right = resolved_paths[right_index]
+        try:
+            return os.path.samefile(left, right)
+        except FileNotFoundError:
+            return False
+        except OSError as error:
+            raise ValueError("feature paths could not be verified as distinct files") from error
+
+    for right_index in range(1, len(paths)):
+        if aliases(0, right_index):
+            if right_index == 1:
+                raise ValueError(
+                    "feature collection and test-vector output paths must resolve to different files"
+                )
+            raise ValueError("feature output paths must not alias any input path")
+
+    for right_index in range(2, len(paths)):
+        if aliases(1, right_index):
+            raise ValueError("feature output paths must not alias any input path")
 
 
 def read_dbf(data: bytes) -> tuple[list[tuple[str, str, int]], list[dict[str, str]]]:
@@ -455,7 +473,11 @@ def build_output(
     output_path: Path,
     vector_path: Path,
 ) -> dict[str, Any]:
-    require_distinct_output_paths(output_path, vector_path)
+    require_distinct_output_paths(
+        output_path,
+        vector_path,
+        (archive_path, terrain_manifest_path, horizontal_path, heights_path),
+    )
     archive_bytes = read_bounded_file(archive_path, MAX_ARCHIVE_BYTES, ARCHIVE_BYTES)
     if len(archive_bytes) != ARCHIVE_BYTES or sha256(archive_bytes) != ARCHIVE_SHA256:
         raise ValueError("source ZIP size or SHA-256 does not match the selected 2026 Census archive")
