@@ -1,0 +1,1480 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:worldforge:schema:global-world-tile-bundle:1.0.0",
+  "title": "WorldForge Global World Tile Bundle v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "bundle_id",
+    "created_at_utc",
+    "source_id",
+    "source_generation",
+    "consumer_limit_profile_id",
+    "lod",
+    "address",
+    "tile_origin",
+    "producers",
+    "layers"
+  ],
+  "properties": {
+    "schema_id": {
+      "const": "urn:worldforge:global-world-tile-bundle:1.0.0"
+    },
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "bundle_id": {
+      "$ref": "#/$defs/sha256"
+    },
+    "created_at_utc": {
+      "type": "string",
+      "format": "date-time",
+      "maxLength": 40
+    },
+    "source_id": {
+      "const": "worldforge-global-world-v1"
+    },
+    "source_generation": {
+      "$ref": "#/$defs/sha256"
+    },
+    "consumer_limit_profile_id": {
+      "type": "string",
+      "pattern": "^worldforge\\.global-world\\.v1\\.[a-z0-9][a-z0-9._-]{0,63}$",
+      "maxLength": 96
+    },
+    "lod": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 16
+    },
+    "address": {
+      "$ref": "#/$defs/address"
+    },
+    "tile_origin": {
+      "$ref": "#/$defs/tile_origin"
+    },
+    "producers": {
+      "$ref": "#/$defs/producers"
+    },
+    "layers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "terrain",
+        "roads",
+        "buildings",
+        "water",
+        "landcover",
+        "vegetation"
+      ],
+      "properties": {
+        "terrain": {
+          "$ref": "#/$defs/raster_sample_layer"
+        },
+        "roads": {
+          "$ref": "#/$defs/vector_layer"
+        },
+        "buildings": {
+          "$ref": "#/$defs/vector_layer"
+        },
+        "water": {
+          "$ref": "#/$defs/vector_layer"
+        },
+        "landcover": {
+          "$ref": "#/$defs/raster_pixel_layer"
+        },
+        "vegetation": {
+          "$ref": "#/$defs/raster_pixel_layer"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "git_commit": {
+      "type": "string",
+      "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"
+    },
+    "address_id": {
+      "type": "string",
+      "pattern": "^wfg1:(?:0|[1-9]|1[0-6]):(?:0|[1-9][0-9]*):(?:0|[1-9][0-9]*)$",
+      "maxLength": 64
+    },
+    "address": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scheme",
+        "address_id",
+        "level",
+        "x",
+        "y",
+        "tile_bounds",
+        "horizontal_crs",
+        "horizontal_datum",
+        "axis_order",
+        "edge_ownership"
+      ],
+      "properties": {
+        "scheme": {
+          "const": "WFG-1"
+        },
+        "address_id": {
+          "$ref": "#/$defs/address_id"
+        },
+        "level": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16
+        },
+        "x": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 94371839
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 47185919
+        },
+        "tile_bounds": {
+          "$ref": "#/$defs/tile_bounds"
+        },
+        "horizontal_crs": {
+          "const": "EPSG:4326"
+        },
+        "horizontal_datum": {
+          "const": "WGS84"
+        },
+        "axis_order": {
+          "const": [
+            "longitude",
+            "latitude"
+          ]
+        },
+        "edge_ownership": {
+          "const": "west_south_inclusive_east_north_exclusive_north_pole_exception"
+        }
+      },
+      "allOf": [
+        {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "const": 0
+                },
+                "x": {
+                  "maximum": 1439
+                },
+                "y": {
+                  "maximum": 719
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "const": 1
+                },
+                "x": {
+                  "maximum": 2879
+                },
+                "y": {
+                  "maximum": 1439
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "const": 2
+                },
+                "x": {
+                  "maximum": 5759
+                },
+                "y": {
+                  "maximum": 2879
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "const": 3
+                },
+                "x": {
+                  "maximum": 11519
+                },
+                "y": {
+                  "maximum": 5759
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "const": 4
+                },
+                "x": {
+                  "maximum": 23039
+                },
+                "y": {
+                  "maximum": 11519
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "const": 5
+                },
+                "x": {
+                  "maximum": 46079
+                },
+                "y": {
+                  "maximum": 23039
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "const": 6
+                },
+                "x": {
+                  "maximum": 92159
+                },
+                "y": {
+                  "maximum": 46079
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "const": 7
+                },
+                "x": {
+                  "maximum": 184319
+                },
+                "y": {
+                  "maximum": 92159
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "const": 8
+                },
+                "x": {
+                  "maximum": 368639
+                },
+                "y": {
+                  "maximum": 184319
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "const": 9
+                },
+                "x": {
+                  "maximum": 737279
+                },
+                "y": {
+                  "maximum": 368639
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "const": 10
+                },
+                "x": {
+                  "maximum": 1474559
+                },
+                "y": {
+                  "maximum": 737279
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "const": 11
+                },
+                "x": {
+                  "maximum": 2949119
+                },
+                "y": {
+                  "maximum": 1474559
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "const": 12
+                },
+                "x": {
+                  "maximum": 5898239
+                },
+                "y": {
+                  "maximum": 2949119
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "const": 13
+                },
+                "x": {
+                  "maximum": 11796479
+                },
+                "y": {
+                  "maximum": 5898239
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "const": 14
+                },
+                "x": {
+                  "maximum": 23592959
+                },
+                "y": {
+                  "maximum": 11796479
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "const": 15
+                },
+                "x": {
+                  "maximum": 47185919
+                },
+                "y": {
+                  "maximum": 23592959
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "const": 16
+                },
+                "x": {
+                  "maximum": 94371839
+                },
+                "y": {
+                  "maximum": 47185919
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "tile_bounds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "west_deg",
+        "south_deg",
+        "east_deg",
+        "north_deg"
+      ],
+      "properties": {
+        "west_deg": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        },
+        "south_deg": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "east_deg": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        },
+        "north_deg": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        }
+      }
+    },
+    "tile_origin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "horizontal_crs",
+        "horizontal_datum",
+        "vertical_datum",
+        "height_type",
+        "longitude_deg",
+        "latitude_deg",
+        "ellipsoidal_height_m"
+      ],
+      "properties": {
+        "horizontal_crs": {
+          "const": "EPSG:4979"
+        },
+        "horizontal_datum": {
+          "const": "WGS84"
+        },
+        "vertical_datum": {
+          "const": "WGS84_ELLIPSOIDAL"
+        },
+        "height_type": {
+          "const": "ellipsoidal"
+        },
+        "longitude_deg": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        },
+        "latitude_deg": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "ellipsoidal_height_m": {
+          "const": 0
+        },
+        "ecef_m": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "number",
+            "minimum": -7000000,
+            "maximum": 7000000
+          }
+        }
+      }
+    },
+    "producer_input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "commit",
+        "contract_id",
+        "artifact_id",
+        "manifest_path",
+        "manifest_size_bytes",
+        "manifest_sha256"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "commit": {
+          "$ref": "#/$defs/git_commit"
+        },
+        "contract_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "artifact_id": {
+          "$ref": "#/$defs/sha256"
+        },
+        "manifest_path": {
+          "type": "string",
+          "const": "provenance/terrain-manifest.json"
+        },
+        "manifest_size_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16777216
+        },
+        "manifest_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "feature_producer_input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "commit",
+        "schema_id",
+        "schema_version",
+        "artifact_id",
+        "manifest_path",
+        "manifest_size_bytes",
+        "manifest_sha256"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "commit": {
+          "$ref": "#/$defs/git_commit"
+        },
+        "schema_id": {
+          "const": "urn:worldforge:global-feature-bundle:1.0.0"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "artifact_id": {
+          "$ref": "#/$defs/sha256"
+        },
+        "manifest_path": {
+          "type": "string",
+          "const": "provenance/features-manifest.json"
+        },
+        "manifest_size_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16777216
+        },
+        "manifest_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "assembler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "commit"
+      ],
+      "properties": {
+        "id": {
+          "const": "WorldForge Global World Bundle Assembler"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "commit": {
+          "$ref": "#/$defs/git_commit"
+        }
+      }
+    },
+    "producers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "terrain",
+        "features",
+        "assembler"
+      ],
+      "properties": {
+        "terrain": {
+          "$ref": "#/$defs/producer_input"
+        },
+        "features": {
+          "$ref": "#/$defs/feature_producer_input"
+        },
+        "assembler": {
+          "$ref": "#/$defs/assembler"
+        }
+      }
+    },
+    "raster_geotransform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["horizontal_crs", "axis_order", "affine", "origin_reference", "pixel_registration", "sample_coordinate_rule"],
+      "properties": {
+        "horizontal_crs": { "const": "EPSG:4326" },
+        "axis_order": { "const": ["longitude", "latitude"] },
+        "affine": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["x_origin", "y_origin", "pixel_width", "rotation_x", "rotation_y", "pixel_height"],
+          "properties": {
+            "x_origin": { "type": "number", "minimum": -180, "maximum": 180 },
+            "y_origin": { "type": "number", "minimum": -90, "maximum": 90 },
+            "pixel_width": { "type": "number", "minimum": -1, "maximum": 1, "not": { "const": 0 } },
+            "rotation_x": { "type": "number", "minimum": -1, "maximum": 1 },
+            "rotation_y": { "type": "number", "minimum": -1, "maximum": 1 },
+            "pixel_height": { "type": "number", "minimum": -1, "maximum": 1, "not": { "const": 0 } }
+          }
+        },
+        "origin_reference": { "enum": ["pixel_corner", "pixel_center"] },
+        "pixel_registration": { "enum": ["area", "point"] },
+        "sample_coordinate_rule": { "enum": ["row_col_plus_half", "row_col"] }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "origin_reference": { "const": "pixel_corner" } }, "required": ["origin_reference"] },
+          "then": { "properties": { "sample_coordinate_rule": { "const": "row_col_plus_half" } } }
+        },
+        {
+          "if": { "properties": { "origin_reference": { "const": "pixel_center" } }, "required": ["origin_reference"] },
+          "then": { "properties": { "sample_coordinate_rule": { "const": "row_col" } } }
+        }
+      ]
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "payload_kind",
+        "path",
+        "media_type",
+        "encoding",
+        "size_bytes",
+        "sha256"
+      ],
+      "properties": {
+        "payload_kind": {
+          "enum": ["raster_grid", "vector_shard", "terrain_boundary_support"]
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?:[A-Za-z0-9._-]+/)*[A-Za-z0-9._-]+$"
+        },
+        "media_type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "encoding": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1073741824
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "shape": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "prefixItems": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000
+            },
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000
+            }
+          ]
+        },
+        "dtype": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "byte_order": {
+          "enum": [
+            "little",
+            "big",
+            "not_applicable"
+          ]
+        },
+        "row_order": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "no_data_value": {
+          "type": [
+            "number",
+            "integer",
+            "null"
+          ]
+        },
+        "geotransform": {
+          "$ref": "#/$defs/raster_geotransform"
+        },
+        "geometry_types": {
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "coordinate_dimensions": {
+          "type": "integer",
+          "enum": [
+            2,
+            3
+          ]
+        },
+        "feature_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2000000
+        },
+        "boundary_support_edges": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["edge", "sample_count"],
+            "properties": {
+              "edge": { "enum": ["north", "east", "south", "west"] },
+              "sample_count": { "type": "integer", "minimum": 1, "maximum": 10000 }
+            }
+          }
+        },
+        "producer_descriptor": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "payload_kind": { "const": "raster_grid" } }, "required": ["payload_kind"] },
+          "then": {
+            "properties": { "media_type": { "const": "application/octet-stream" } },
+            "required": ["shape", "dtype", "byte_order", "row_order", "no_data_value", "geotransform"],
+            "not": { "anyOf": [
+              { "required": ["feature_count"] },
+              { "required": ["geometry_types"] },
+              { "required": ["coordinate_dimensions"] },
+              { "required": ["boundary_support_edges"] }
+            ] }
+          }
+        },
+        {
+          "if": { "properties": { "payload_kind": { "const": "vector_shard" } }, "required": ["payload_kind"] },
+          "then": {
+            "properties": {
+              "media_type": { "const": "application/geo+json" },
+              "coordinate_dimensions": { "const": 2 }
+            },
+            "required": ["feature_count", "geometry_types", "coordinate_dimensions"],
+            "not": { "anyOf": [
+              { "required": ["shape"] },
+              { "required": ["dtype"] },
+              { "required": ["byte_order"] },
+              { "required": ["row_order"] },
+              { "required": ["no_data_value"] },
+              { "required": ["geotransform"] },
+              { "required": ["boundary_support_edges"] }
+            ] }
+          }
+        },
+        {
+          "if": { "properties": { "payload_kind": { "const": "terrain_boundary_support" } }, "required": ["payload_kind"] },
+          "then": {
+            "properties": {
+              "media_type": { "const": "application/geo+json" },
+              "encoding": { "const": "geojson" },
+              "geometry_types": { "const": ["Point"] },
+              "coordinate_dimensions": { "const": 3 }
+            },
+            "required": ["feature_count", "geometry_types", "coordinate_dimensions", "boundary_support_edges"],
+            "not": { "anyOf": [
+              { "required": ["shape"] },
+              { "required": ["dtype"] },
+              { "required": ["byte_order"] },
+              { "required": ["row_order"] },
+              { "required": ["no_data_value"] },
+              { "required": ["geotransform"] }
+            ] }
+          }
+        }
+      ]
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coverage_claim",
+        "coverage_confidence"
+      ],
+      "properties": {
+        "coverage_claim": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "coverage_confidence": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "query_bounds_wgs84": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/tile_bounds"
+            }
+          ]
+        },
+        "complete_for_emitted_samples": {
+          "type": "boolean"
+        },
+        "source_coverage": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        }
+      }
+    },
+    "vertical_source_reference": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "source_vertical_datum",
+        "method",
+        "approximate",
+        "geoid_mask_code"
+      ],
+      "properties": {
+        "source_vertical_datum": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "approximate": {
+          "type": "boolean"
+        },
+        "warning": {
+          "type": "string",
+          "maxLength": 2048
+        },
+        "geoid_mask_code": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "geoid_grid_id": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "geoid_grid_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "interpolation_method": {
+          "type": "string",
+          "maxLength": 128
+        }
+      }
+    },
+    "vertical_conversion": {
+      "type": "object",
+      "additionalProperties": true,
+      "minProperties": 1,
+      "properties": {
+        "method": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "geoid_grid_id": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "geoid_grid_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "interpolation_method": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "approximate": {
+          "type": "boolean"
+        },
+        "quality_warning": {
+          "type": "string",
+          "maxLength": 2048
+        },
+        "numeric_validation": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "vertical_references_by_source_code": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^(0|[1-9][0-9]*)$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/vertical_source_reference"
+          }
+        }
+      }
+    },
+    "spatial_reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "horizontal_crs",
+        "horizontal_datum",
+        "axis_order",
+        "has_elevation",
+        "source_vertical_datum",
+        "height_type",
+        "vertical_datum"
+      ],
+      "properties": {
+        "horizontal_crs": {
+          "enum": [
+            "EPSG:4326",
+            "EPSG:4979"
+          ]
+        },
+        "horizontal_datum": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "axis_order": {
+          "enum": [
+            [
+              "longitude",
+              "latitude"
+            ],
+            [
+              "longitude",
+              "latitude",
+              "ellipsoidal_height"
+            ]
+          ]
+        },
+        "has_elevation": {
+          "type": "boolean"
+        },
+        "source_vertical_datum": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "height_type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "vertical_datum": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "vertical_conversion": {
+          "$ref": "#/$defs/vertical_conversion"
+        },
+        "horizontal_realization": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "coordinate_epoch": {
+          "type": "number",
+          "minimum": 1800,
+          "maximum": 2500
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "has_elevation": {
+                "const": false
+              }
+            },
+            "required": [
+              "has_elevation"
+            ]
+          },
+          "then": {
+            "properties": {
+              "source_vertical_datum": {
+                "const": "not_applicable"
+              },
+              "height_type": {
+                "const": "not_applicable"
+              },
+              "vertical_datum": {
+                "const": "not_applicable"
+              }
+            },
+            "not": {
+              "required": [
+                "vertical_conversion"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "has_elevation": {
+                "const": true
+              }
+            },
+            "required": [
+              "has_elevation"
+            ]
+          },
+          "then": {
+            "required": [
+              "vertical_conversion"
+            ],
+            "properties": {
+              "height_type": {
+                "const": "ellipsoidal"
+              },
+              "vertical_datum": {
+                "const": "WGS84_ELLIPSOIDAL"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source_vertical_datum": {
+                "const": "per_sample_source_mask"
+              }
+            },
+            "required": [
+              "source_vertical_datum"
+            ]
+          },
+          "then": {
+            "properties": {
+              "vertical_conversion": {
+                "required": [
+                  "vertical_references_by_source_code"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "source_record": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": true,
+      "properties": {
+        "provider": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "dataset": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "release": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "source_uri": {
+          "type": "string",
+          "maxLength": 2048
+        },
+        "asset_uri": {
+          "type": "string",
+          "maxLength": 2048
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "license": {
+          "type": [
+            "string",
+            "object"
+          ]
+        },
+        "attribution": {
+          "type": [
+            "string",
+            "object",
+            "array"
+          ]
+        }
+      }
+    },
+    "layer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "requested",
+        "payloads",
+        "coverage",
+        "spatial_reference",
+        "source_lineage",
+        "attribution",
+        "transform",
+        "producer_metadata"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "ready",
+            "partial",
+            "no_source_coverage",
+            "not_generated",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "requested": {
+          "type": "boolean"
+        },
+        "payloads": {
+          "type": "array",
+          "maxItems": 65536,
+          "items": {
+            "$ref": "#/$defs/payload"
+          }
+        },
+        "coverage": {
+          "$ref": "#/$defs/coverage"
+        },
+        "spatial_reference": {
+          "$ref": "#/$defs/spatial_reference"
+        },
+        "source_lineage": {
+          "type": "array",
+          "maxItems": 4096,
+          "items": {
+            "$ref": "#/$defs/source_record"
+          }
+        },
+        "attribution": {
+          "type": "array",
+          "maxItems": 1024,
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2048
+              },
+              {
+                "type": "object",
+                "minProperties": 1,
+                "additionalProperties": true
+              }
+            ]
+          }
+        },
+        "transform": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": true
+        },
+        "producer_metadata": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "feature_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2000000
+        },
+        "pixel_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000000
+        },
+        "sample_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000000
+        },
+        "gap_declared": {
+          "type": "boolean"
+        },
+        "gap_reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "disclosure": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "fallback": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "status",
+            "source_id",
+            "provenance"
+          ],
+          "properties": {
+            "status": {
+              "const": "ready"
+            },
+            "source_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "provenance": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        },
+        "error_code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "partial"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "disclosure"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "no_source_coverage"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "gap_declared",
+              "gap_reason"
+            ],
+            "properties": {
+              "gap_declared": {
+                "const": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "not_generated",
+                  "failed",
+                  "cancelled"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "gap_declared",
+              "gap_reason",
+              "error_code"
+            ],
+            "properties": {
+              "gap_declared": {
+                "const": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "raster_sample_layer": {
+      "allOf": [
+        { "$ref": "#/$defs/layer" },
+        {
+          "properties": {
+            "payloads": {
+              "items": {
+                "anyOf": [
+                  { "properties": { "payload_kind": { "const": "raster_grid" } }, "required": ["payload_kind"] },
+                  { "properties": { "payload_kind": { "const": "terrain_boundary_support" } }, "required": ["payload_kind"] }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "status": { "const": "ready" } },
+            "required": ["status"]
+          },
+          "then": {
+            "required": ["sample_count"],
+            "properties": {
+              "payloads": {
+                "minItems": 1,
+                "contains": { "properties": { "payload_kind": { "const": "raster_grid" } }, "required": ["payload_kind"] },
+                "minContains": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "raster_pixel_layer": {
+      "allOf": [
+        { "$ref": "#/$defs/layer" },
+        {
+          "properties": {
+            "payloads": {
+              "items": { "properties": { "payload_kind": { "const": "raster_grid" } }, "required": ["payload_kind"] }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "status": { "const": "ready" } },
+            "required": ["status"]
+          },
+          "then": {
+            "required": ["pixel_count"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": { "const": "ready" },
+              "pixel_count": { "minimum": 1 }
+            },
+            "required": ["status", "pixel_count"]
+          },
+          "then": { "properties": { "payloads": { "minItems": 1 } } }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": { "const": "ready" },
+              "pixel_count": { "const": 0 }
+            },
+            "required": ["status", "pixel_count"]
+          },
+          "then": {
+            "required": ["disclosure"],
+            "properties": {
+              "payloads": { "maxItems": 0 },
+              "coverage": {
+                "required": ["query_bounds_wgs84"],
+                "properties": { "query_bounds_wgs84": { "$ref": "#/$defs/tile_bounds" } }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "vector_layer": {
+      "allOf": [
+        { "$ref": "#/$defs/layer" },
+        {
+          "properties": {
+            "payloads": {
+              "items": { "properties": { "payload_kind": { "const": "vector_shard" } }, "required": ["payload_kind"] }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "status": { "const": "ready" } },
+            "required": ["status"]
+          },
+          "then": { "required": ["feature_count"] }
+        },
+        {
+          "if": {
+            "properties": { "feature_count": { "minimum": 1 } },
+            "required": ["feature_count"]
+          },
+          "then": { "properties": { "payloads": { "minItems": 1 } } }
+        }
+      ]
+    }
+  }
+}
