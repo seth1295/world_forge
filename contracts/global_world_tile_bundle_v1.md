@@ -17,6 +17,8 @@ Example directory:
 
 ```text
 manifest.json
+provenance/terrain-manifest.json
+provenance/features-manifest.json
 terrain/height_samples.f32le
 terrain/source_mask.u8
 terrain/quality_mask.u8
@@ -31,72 +33,13 @@ landcover/classes.u8
 vegetation/placement_support.u8
 ```
 
-Only payloads listed for a layer may be consumed. Optional files must be omitted from that layer's `payloads` array when not available. Temporary staging data is never a published bundle.
+Only payloads listed for a layer may be consumed. The two raw producer manifests are the only additional files and their relative paths, byte lengths, and SHA-256 values are listed under `producers`; they are retained byte-for-byte for audit. Optional layer payloads must be omitted from that layer's `payloads` array when not available. Temporary staging data is never a published bundle.
 
 ## 2. Canonical manifest
 
-The following fields are required. The provider validates this external form, verifies each payload, and can normalize it into an engine-facing envelope; normalization must preserve the full manifest and every layer's source, quality, status, and spatial metadata.
+The machine-readable shape, field types, required properties, enums, and numeric bounds are normative in [`global_world_tile_bundle_v1.schema.json`](global_world_tile_bundle_v1.schema.json), Draft 2020-12. The prose below defines semantic constraints that also require runtime validation (for example address/bounds agreement, source-manifest mapping, payload hashes, and vertical conversions). The provider validates the schema and these semantic constraints before decoding; normalization must preserve the full manifest and every layer's source, quality, status, and spatial metadata.
 
-```json
-{
-  "schema_id": "urn:worldforge:global-world-tile-bundle:1.0.0",
-  "schema_version": "1.0.0",
-  "bundle_id": "stable producer bundle identity",
-  "created_at_utc": "RFC 3339 UTC timestamp",
-  "source_id": "worldforge-global-world",
-  "source_generation": "immutable generation/configuration identity",
-  "lod": 0,
-  "address": {
-    "scheme": "WFG-1",
-    "address_id": "wfg1:0:729:555",
-    "level": 0,
-    "x": 729,
-    "y": 555,
-    "tile_bounds": {
-      "west_deg": 2.25,
-      "south_deg": 48.75,
-      "east_deg": 2.5,
-      "north_deg": 49.0
-    },
-    "horizontal_crs": "EPSG:4326",
-    "horizontal_datum": "WGS84",
-    "axis_order": ["longitude", "latitude"],
-    "edge_ownership": "west_south_inclusive_east_north_exclusive"
-  },
-  "tile_origin": {
-    "horizontal_crs": "EPSG:4979",
-    "horizontal_datum": "WGS84",
-    "vertical_datum": "WGS84_ELLIPSOIDAL",
-    "height_type": "ellipsoidal",
-    "longitude_deg": 2.375,
-    "latitude_deg": 48.875,
-    "ellipsoidal_height_m": 0.0
-  },
-  "producers": {
-    "terrain": {"id": "producer id", "version": "version", "commit": "revision"},
-    "features": {"id": "producer id", "version": "version", "commit": "revision"}
-  },
-  "layers": {
-    "terrain": {
-      "status": "ready",
-      "requested": true,
-      "payloads": [],
-      "coverage": {},
-      "spatial_reference": {},
-      "source_lineage": [],
-      "attribution": [],
-      "transform": {}
-    },
-    "roads": {"status": "ready", "requested": true, "payloads": [], "coverage": {}, "spatial_reference": {}, "source_lineage": [], "attribution": [], "transform": {}},
-    "buildings": {"status": "ready", "requested": true, "payloads": [], "coverage": {}, "spatial_reference": {}, "source_lineage": [], "attribution": [], "transform": {}},
-    "water": {"status": "ready", "requested": true, "payloads": [], "coverage": {}, "spatial_reference": {}, "source_lineage": [], "attribution": [], "transform": {}},
-    "landcover": {"status": "ready", "requested": true, "payloads": [], "coverage": {}, "spatial_reference": {}, "source_lineage": [], "attribution": [], "transform": {}},
-    "vegetation": {"status": "ready", "requested": true, "payloads": [], "coverage": {}, "spatial_reference": {}, "source_lineage": [], "attribution": [], "transform": {}}
-  }
-}
-```
-
-The values in `layers` above illustrate required structure only; an empty payload list is not a valid successful terrain or raster layer. A successful zero-feature vector query may have no geometry payload, but it must include `feature_count: 0`, the completed query extent, its source/release, and a coverage statement that makes no claim of surveyed absence.
+The canonical manifest contains a schema ID/version, a 64-character lowercase SHA-256 `bundle_id` and `source_generation`, the fixed `source_id` profile, timestamp, `consumer_limit_profile_id`, `lod`, canonical `address`, centered `tile_origin`, producer/assembler identities and raw-manifest hashes, and a keyed `layers` object for the six required layer names. A successful zero-feature vector query may have no geometry payload, but it must include `feature_count: 0`, the completed query extent, its source/release, and a coverage statement that makes no claim of surveyed absence. The JSON Schema is strict about required field types and domain bounds; runtime validation additionally checks address/bounds equality, hashes, paths, sample dimensions, and geodetic/vertical consistency.
 
 `source_id` identifies the configured combined source profile; `source_generation` identifies the immutable producer/data configuration for a request. They do not replace per-layer provenance. `lod` is a runtime representation level and is independent of WFG-1 address `level`. One source-native payload may be used to derive multiple render representations, but every derived level must identify its decimation/generalization method and preserve source data/provenance. Do not claim LOD transitions until distinct representations for the same address are actually produced and loaded, the transition is exercised, and shared-edge/collision behavior is verified.
 
@@ -106,11 +49,33 @@ The values in `layers` above illustrate required structure only; an empty payloa
 
 WFG-1 addresses identify a hierarchy of geographic **extents**. Level 0 cells are 0.25 degrees wide and high, with `x` increasing east from longitude -180 and `y` increasing north from latitude -90. Each next address level halves both angular dimensions. Coordinates use normalized longitude in `[-180, 180)`; positive 180 maps to negative 180. Cells own their west and south edges and exclude east and north edges, except the global north pole belongs to the last northern row. Longitude is undefined at either exact pole, so the unique point owner at latitude +90 or -90 uses canonical longitude 0 (the midpoint x column at the requested level), regardless of the input longitude. A degenerate point request at a pole returns this one owner; non-degenerate extents touching a pole still enumerate all intersecting longitude columns because the area immediately below the pole spans those meridians. This rule changes point ownership only; it does not change tile bounds.
 
+The supported address level is an integer `L` from 0 through 16. At level `L`, `x_count = 1440 × 2^L`, `y_count = 720 × 2^L`, and valid indices are `0 ≤ x < x_count`, `0 ≤ y < y_count`. Canonical IDs match `wfg1:<L>:<x>:<y>` with decimal integers and no leading zeros. Producers and consumers reject any other scheme, level, index, or noncanonical ID. The bounds are computed as `west = -180 + x × (0.25 / 2^L)`, `south = -90 + y × (0.25 / 2^L)`, `east = west + 0.25 / 2^L`, `north = south + 0.25 / 2^L`. The provider recomputes these values and requires exact finite-number equality with the manifest bounds before decoding.
+
 The address's normalized lookup coordinates are EPSG:4326 longitude/latitude on the WGS 84 datum. This does not relabel or erase a source dataset's realization, epoch, axis order, or datum. Preserve those in `source_lineage` and record any operation used to transform source coordinates into the bundle's normalized address coordinates. `lod` describes a rendering/collision representation of one fixed WFG-1 extent; never use it as an alternate geographic address. A runtime may derive coarser mesh levels from the same source-native raster, provided the decimation, edge ownership, topology, and collision readiness are explicit. This does not change the original data's source resolution or create new source detail.
+
+## 4. Producer-to-canonical mapping
+
+The bundled producers keep their own source-native contracts. The assembler must validate each one before mapping it to the parent contract; it must retain the raw producer manifest files at `provenance/terrain-manifest.json` and `provenance/features-manifest.json`, record their exact byte lengths and SHA-256 values under `producers`, and copy or normalize data without discarding source lineage, masks, limits, rights notices, warnings, or transformation metadata.
+
+| Producer input | Canonical mapping | Rejection/retention rule |
+| --- | --- | --- |
+| Global terrain `contract_id = urn:worldforge:contract:global-terrain-tile:1.0.0` | `tile.id`/`tile.level`/`tile.x`/`tile.y`/`tile.bounds_wgs84` → `address`; `terrain.status`/`requested` → `layers.terrain.status`/`requested`; `terrain.payloads[]` → terrain payload descriptors; `terrain.coverage`, `terrain.source_lineage`, `terrain.attribution`, `terrain.transform`, `terrain.grid`, `terrain.placement_surface`, `terrain.geoid_conversion`, masks and source legends → the corresponding terrain `coverage`, `source_lineage`, `attribution`, `transform`, `spatial_reference`, `metadata`, and `vertical_conversion` fields. Map raw `terrain.source_vertical_reference_by_mask` to canonical `vertical_conversion.vertical_references_by_source_code`, retaining each exact source and geoid mask code. `producer` and `generation` → `producers.terrain` and generation identity inputs. | Require canonical WFG-1 ID and exact recomputed bounds. Use `ellipsoidal_height_samples.f64le` only when the placement surface and conversion masks validate. For a mosaic, map each `source_mask` code to its own vertical reference. A missing/invalid conversion cannot become ready ellipsoidal terrain. Preserve source-native H and all masks. |
+| Global geographic features `schema_id = urn:worldforge:global-feature-bundle:1.0.0` | `address.tile_id`/`level`/`x`/`y`/`bounds_wgs84` → the same canonical `address`; index each `layers[]` item by `layer_id` → `layers.<layer_id>`; `outcome` → `status`; `requested`, `payloads`, feature/pixel counts, query bounds, coverage claims/confidence, `source_lineage`, `attribution`, `transform`, `metadata`, and `error_code` → same-named canonical fields, with `query_bounds_wgs84` nested under `coverage`. Map producer payload `representation` to canonical `encoding` and preserve the original descriptor under `producer_metadata`. `producer`, release/rights catalogs and generation limits remain under `producers.features` and `layers.<id>.metadata`. | Require matching WFG-1 address and bounds. Duplicate/missing layer IDs, malformed/invalid geometry or incomplete shard sets fail the layer; the assembler never emits a truncated layer as complete. Completed zero-feature queries remain `ready` with count zero and query disclosure. Keep Overture per-feature `sources[]`, source license and stable source/fragment IDs in the GeoJSON. |
+| Regional `terrain_grid_v1` (`EPSG:4269`, region-specific AEQD, NAVD88) | None by default. | It is not a WGS84/ECEF global terrain input. Reject it as a ready global terrain layer unless an explicit supported horizontal/vertical operation is independently documented and its result is validated. Never relabel its local coordinates or NAVD88 heights as WGS84/ellipsoidal. |
+
+The canonical `layers` object has exactly one keyed record for each of `terrain`, `roads`, `buildings`, `water`, `landcover`, and `vegetation`; unsupported or unrequested content remains an explicit layer status rather than disappearing. Canonical `spatial_reference.axis_order` is an array, e.g. `["longitude", "latitude"]`; the current Godot internal enum string `longitude_latitude` is a derived adapter value and must be produced by the mapping, not copied as if it were the canonical representation. Canonical `tile_bounds` are nested under `address`; a Godot adapter may expose its internal flat `tile_bounds` dictionary by copying the four exact values, without changing them.
+
+`source_id` is the profile string `worldforge-global-world-v1` for the selected source policy. The canonical `source_generation` and `bundle_id` are the same lowercase SHA-256 digest in v1. Construct the UTF-8 bytes in this exact order, using a single zero byte between components and no trailing delimiter: `WF-WORLD-GENERATION-1`, `source_id`, canonical `address_id`, base-10 `lod`, terrain producer `artifact_id`, feature producer `artifact_id` (copied from its `bundle_id`), assembler ID, assembler version, and assembler Git commit. SHA-256 those bytes. A different source policy, producer artifact, runtime LOD, assembler version/commit, or tile address therefore has a different generation identity. The exact source manifests and their source hashes remain available for independent reproduction.
+
+The Godot adapter derives `layer_outcomes` from canonical `layers`, copying `status`, `requested`, coverage disclosure, fallback/gap, error code, payload descriptors, and producer metadata. It derives `layer_spatial_references` by copying the typed `spatial_reference` record and converting the canonical axis-order array to the internal enum. It must not turn `no_source_coverage`, `not_generated`, `failed`, or `cancelled` into an empty ready layer. It derives the internal flat `tile_bounds` from `address.tile_bounds`, verifies the requested source ID/generation/LOD, and retains the untouched canonical manifest alongside decoded arrays.
 
 Terrain, vector features, water, land-cover samples and derived vegetation positions must be positioned from their own declared source coordinates and height semantics. All installed layers use the shared bundle tile origin and the runtime's local tangent frame. Source geometry is not placed at world-scale single-precision coordinates. A derived road or vegetation mesh may use procedural style parameters, but its metadata must distinguish those derived values from observed source attributes.
 
-## 4. Layer records and status semantics
+## 5. Consumer resource-limit profile
+
+Every consumer uses a named, versioned, finite limit profile that is part of the executable/configuration and is reported in verification evidence. The profile is never taken from an untrusted manifest; the provider compares `consumer_limit_profile_id` with its configured profile and rejects an unknown or unsupported ID. Before allocation or parsing it bounds manifest bytes, total bundle bytes, each payload's bytes, payload descriptor count, raster width/height/pixel count, vector shard and feature counts, feature geometry coordinate count, relative path length, and decoded geometry bytes. The reference runtime profile is `worldforge.global-world.v1.default`; it caps a manifest at 16 MiB, a bundle at 4 GiB, one payload file at 1 GiB, one vector layer at 2 GiB serialized, one raster layer at 10 million samples, one vector layer at 2 million features and 50 million coordinate positions, decoded geometry at 4 GiB, payload descriptors at 65,536, one GeoJSON shard at 16 MiB, and a relative payload path at 1,024 bytes. Implementations may use a stricter profile; any override must use a new profile ID, be finite, appear in reproduction instructions, and be tested at its boundary. A limit violation rejects the whole affected layer or bundle before installation; no consumer or producer may silently truncate it. These are memory/integrity bounds, not performance targets.
+
+## 6. Layer records and status semantics
 
 Every layer in the bundle has a record with these required fields:
 
@@ -118,7 +83,7 @@ Every layer in the bundle has a record with these required fields:
 - `requested`: whether this request asked the producer for the layer.
 - `payloads`: zero or more integrity-checked payload descriptors.
 - `coverage`: query extent, counts where applicable, coverage claim, and confidence/limitations.
-- `spatial_reference`: horizontal CRS/datum/axis order and explicit vertical semantics.
+- `spatial_reference`: `horizontal_crs`, `horizontal_datum`, `axis_order` (an array), `has_elevation` (boolean), `source_vertical_datum`, `height_type`, and `vertical_datum`. A no-elevation layer sets the three vertical fields to `not_applicable`; an elevation-bearing layer declares the source and output vertical semantics and provides `vertical_conversion` when conversion or terrain-derived placement is used.
 - `source_lineage`: one or more source records for source-derived output; empty only when no source was used.
 - `attribution`: required attribution notices and license identifiers/URLs.
 - `transform`: source-to-payload mapping, resampling/clip/generalization and geometry ownership details.
@@ -129,7 +94,7 @@ When applicable, `gap_declared` is boolean and `gap_reason` is a nonempty explan
 
 `coverage` is evidence about the actual query and source response, not a completeness assertion by default. Include `feature_count` for vectors and `pixel_count`/`sample_count` for rasters. `coverage_claim` and `coverage_confidence` must be explicit and conservative. An empty Overture result or absent WorldCover/terrain asset cannot be converted into a claim of geographic absence.
 
-## 5. Payload descriptors and layer content
+## 7. Payload descriptors and layer content
 
 Every payload descriptor includes `path`, `media_type`, `encoding`, `size_bytes`, and lowercase SHA-256 `sha256`. Raster descriptors also include `shape` (`[rows, columns]`), `dtype`, `byte_order`, row order, no-data handling, and the exact geotransform. Vector shard descriptors include geometry types, coordinate dimensions/axis order, and stable feature IDs retained in the payload. Payload paths are unique within a bundle.
 
@@ -149,11 +114,11 @@ Vector geometries use WGS 84 longitude/latitude coordinates after a declared tra
 
 Land-cover rasters preserve original category codes, source no-data, native grid transform, source product/version and pixel counts. WorldCover classes are categorical classes, not continuous values. A derived vegetation-support layer retains its class mapping and exact relationship to its source pixels. It does not represent observed individual tree locations. Procedural plant/clump placement, mesh density, jitter or exclusions are separate derived metadata and must be reproducible, bounded per WFG-1 tile, and clearly labelled synthetic. Where a water, road, or building exclusion mask was not used, say so rather than implying such exclusions.
 
-## 6. Provenance and rights
+## 8. Provenance and rights
 
 Each source lineage record identifies, when available: provider; dataset/product and release; source feature or asset ID; source URI; retrieval time or immutable snapshot; source-object size, ETag and checksum; original CRS/datum/realization/epoch and units; source quality/uncertainty; license/terms URL; attribution; and any conversion/clip operation. Preserve feature-level source attribution records from Overture. Keep ODbL-derived data separable and retain obligations. Preserve the ESA WorldCover CC BY 4.0 attribution and the Copernicus/GEBCO source notices. Do not package restricted sources or publish local prompt data, credentials, or raw datasets whose redistribution terms are not satisfied.
 
-## 7. Runtime validation and compatibility
+## 9. Runtime validation and compatibility
 
 The Godot provider validates the exact schema ID/version before decoding; canonical address ID, numeric bounds and tile origin must agree with the requested WFG-1 extent. It checks every required layer status, spatial reference, payload size/path/hash, raster dimensions, supported encoding, and vertical conversion record. It rejects unknown status/CRS/datum, malformed or unbounded payloads, contradictory metadata, unlisted paths in strict mode, and unsupported future major versions. A provider may skip an optional layer only when the layer status explicitly says why.
 
@@ -161,7 +126,7 @@ The provider maps canonical `layers` into its internal `layer_outcomes`, `layer_
 
 Minor versions may add optional fields. Breaking field meaning, payload semantics or required fields requires a new major schema ID. Producers and consumers publish exact schema versions and commits in their test evidence. A producer output from a regional contract must be adapted explicitly; guessing or silently coercing fields is invalid.
 
-## 8. Required acceptance evidence
+## 10. Required acceptance evidence
 
 Before this contract is approved for integration, producer and consumer evidence must include:
 
