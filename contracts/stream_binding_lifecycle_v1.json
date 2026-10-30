@@ -1,0 +1,52 @@
+{
+  "contract_id": "urn:worldforge:contract:stream-binding-lifecycle:1.0.0",
+  "contract_version": 1,
+  "scope": "volatile streamed representation only",
+  "states": [
+    "unloaded",
+    "queued",
+    "decoding",
+    "ready",
+    "attached",
+    "retiring",
+    "failed",
+    "cancelled"
+  ],
+  "transitions": [
+    { "from": "unloaded", "event": "request", "to": "queued" },
+    { "from": "failed", "event": "retry", "to": "queued" },
+    { "from": "cancelled", "event": "retry", "to": "queued" },
+    { "from": "queued", "event": "dispatch", "to": "decoding" },
+    { "from": "queued", "event": "cancel", "to": "cancelled" },
+    { "from": "decoding", "event": "complete_current_generation", "to": "ready" },
+    { "from": "decoding", "event": "complete_stale_generation", "to": "cancelled" },
+    { "from": "decoding", "event": "fail", "to": "failed" },
+    { "from": "decoding", "event": "cancel", "to": "cancelled" },
+    { "from": "ready", "event": "attach_current_generation", "to": "attached" },
+    { "from": "ready", "event": "attach_stale_generation", "to": "cancelled" },
+    { "from": "ready", "event": "cancel", "to": "cancelled" },
+    { "from": "attached", "event": "retire", "to": "retiring" },
+    { "from": "retiring", "event": "release_resources", "to": "unloaded" },
+    { "from": "cancelled", "event": "release_resources", "to": "unloaded" }
+  ],
+  "binding_identity": [
+    "object_id",
+    "object_revision",
+    "request_generation",
+    "tile_key",
+    "tile_content_revision",
+    "spatial_reference_id",
+    "instance_generation"
+  ],
+  "completion_acceptance": [
+    "request_generation_is_current",
+    "object_revision_is_current",
+    "tile_membership_is_current",
+    "tile_content_revision_is_current",
+    "spatial_reference_id_matches_exact_definition"
+  ],
+  "stale_completion_effect": "discard_without_registry_mutation_or_scene_attachment",
+  "unload_effect": "release_transient_node_render_physics_resources_and_membership; retain_object_id_revision_position_components_and_registry_record",
+  "destroy_effect": "explicit_world_registry_tombstone; never a stream-binding state or side-effect of tile_unload",
+  "batch_attach_policy": "validate_and_construct_all_members_then_attach_the_seam_coupled_set_atomically_on_the_Godot_main_thread"
+}

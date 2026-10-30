@@ -1,0 +1,63 @@
+{
+  "contract_id": "urn:worldforge:contract:world-state:1.0.0",
+  "schema_version": 1,
+  "world_id": "urn:worldforge:world:earth",
+  "snapshot_id": "fixture-snapshot-001",
+  "snapshot_revision": 1,
+  "simulation_clock": {
+    "tick_index": 42,
+    "last_committed_command_sequence": 108,
+    "tick_rate_numerator": 60,
+    "tick_rate_denominator": 1
+  },
+  "spatial_references": [
+    {
+      "frame_id": "urn:worldforge:spatial-frame:global:wgs84-geocentric-unresolved-v1",
+      "scope": "earth_global",
+      "crs": {
+        "identifier": "EPSG:4978",
+        "definition_text": "EPSG:4978; synthetic fixture only; registry release unspecified",
+        "definition_sha256": "d552491ed6be5bd4dd068167ff527244885937bf76b7126cd7262c74f557e54f",
+        "registry_release": "unspecified-fixture-only",
+        "axes": [
+          { "name": "X", "direction": "geocentricX", "unit": "metre" },
+          { "name": "Y", "direction": "geocentricY", "unit": "metre" },
+          { "name": "Z", "direction": "geocentricZ", "unit": "metre" }
+        ]
+      },
+      "horizontal_reference": {
+        "datum": "WGS 84",
+        "realization_status": "unresolved",
+        "realization": null,
+        "coordinate_epoch_status": "unresolved",
+        "coordinate_epoch": null
+      },
+      "vertical_reference": {
+        "status": "not_applicable",
+        "datum": "not_applicable",
+        "height_type": "geocentric_coordinate",
+        "unit": "metre"
+      }
+    }
+  ],
+  "objects": [
+    {
+      "object_id": "urn:worldforge:object:fixture:synthetic-anchor-01",
+      "object_kind": "simulation_foundation_fixture",
+      "revision": 1,
+      "position": {
+        "spatial_reference_id": "urn:worldforge:spatial-frame:global:wgs84-geocentric-unresolved-v1",
+        "coordinates": [6378137.0, 0.0, 0.0],
+        "operation_record_ids": []
+      },
+      "components": []
+    }
+  ],
+  "tombstones": [
+    {
+      "object_id": "urn:worldforge:object:fixture:synthetic-retired-02",
+      "deletion_revision": 2,
+      "deleted_at_tick": 17
+    }
+  ]
+}

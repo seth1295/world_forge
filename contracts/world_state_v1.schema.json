@@ -1,0 +1,516 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:worldforge:contract:world-state:1.0.0",
+  "title": "WorldForge durable world-state snapshot v1",
+  "description": "Durable registry state only. Renderer, physics, scene-node and stream-task state are excluded.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_id",
+    "schema_version",
+    "world_id",
+    "snapshot_id",
+    "snapshot_revision",
+    "simulation_clock",
+    "spatial_references",
+    "objects",
+    "tombstones"
+  ],
+  "properties": {
+    "contract_id": {
+      "const": "urn:worldforge:contract:world-state:1.0.0"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "world_id": {
+      "type": "string",
+      "pattern": "^urn:worldforge:world:[A-Za-z0-9._~:-]+$",
+      "minLength": 20,
+      "maxLength": 255
+    },
+    "snapshot_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._~:-]{0,127}$"
+    },
+    "snapshot_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "simulation_clock": {
+      "$ref": "#/$defs/simulation_clock"
+    },
+    "spatial_references": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/spatial_reference"
+      }
+    },
+    "objects": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/world_object"
+      }
+    },
+    "tombstones": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/tombstone"
+      }
+    }
+  },
+  "$defs": {
+    "simulation_clock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tick_index",
+        "last_committed_command_sequence",
+        "tick_rate_numerator",
+        "tick_rate_denominator"
+      ],
+      "properties": {
+        "tick_index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "last_committed_command_sequence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "tick_rate_numerator": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "tick_rate_denominator": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        }
+      }
+    },
+    "spatial_reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "frame_id",
+        "scope",
+        "crs",
+        "horizontal_reference",
+        "vertical_reference"
+      ],
+      "properties": {
+        "frame_id": {
+          "type": "string",
+          "pattern": "^urn:worldforge:spatial-frame:[A-Za-z0-9._~:-]+$",
+          "maxLength": 255
+        },
+        "scope": {
+          "const": "earth_global"
+        },
+        "crs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "identifier",
+            "definition_text",
+            "definition_sha256",
+            "registry_release",
+            "axes"
+          ],
+          "properties": {
+            "identifier": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "definition_text": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32768
+            },
+            "definition_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "registry_release": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "axes": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "direction",
+                  "unit"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "direction": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "unit": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  }
+                }
+              }
+            }
+          }
+        },
+        "horizontal_reference": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "datum",
+            "realization_status",
+            "realization",
+            "coordinate_epoch_status",
+            "coordinate_epoch"
+          ],
+          "properties": {
+            "datum": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "realization_status": {
+              "enum": [
+                "specified",
+                "unresolved",
+                "not_applicable"
+              ]
+            },
+            "realization": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 255
+            },
+            "coordinate_epoch_status": {
+              "enum": [
+                "specified",
+                "unresolved",
+                "not_applicable"
+              ]
+            },
+            "coordinate_epoch": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "realization_status": {
+                    "const": "specified"
+                  }
+                },
+                "required": [
+                  "realization_status"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "realization": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "realization_status": {
+                    "enum": [
+                      "unresolved",
+                      "not_applicable"
+                    ]
+                  }
+                },
+                "required": [
+                  "realization_status"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "realization": {
+                    "type": "null"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "coordinate_epoch_status": {
+                    "const": "specified"
+                  }
+                },
+                "required": [
+                  "coordinate_epoch_status"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "coordinate_epoch": {
+                    "type": "number"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "coordinate_epoch_status": {
+                    "enum": [
+                      "unresolved",
+                      "not_applicable"
+                    ]
+                  }
+                },
+                "required": [
+                  "coordinate_epoch_status"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "coordinate_epoch": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "vertical_reference": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "datum",
+            "height_type",
+            "unit"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "specified",
+                "unresolved",
+                "not_applicable"
+              ]
+            },
+            "datum": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "height_type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "unit": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          }
+        }
+      }
+    },
+    "position": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "spatial_reference_id",
+        "coordinates",
+        "operation_record_ids"
+      ],
+      "properties": {
+        "spatial_reference_id": {
+          "type": "string",
+          "pattern": "^urn:worldforge:spatial-frame:[A-Za-z0-9._~:-]+$",
+          "maxLength": 255
+        },
+        "coordinates": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "number"
+          }
+        },
+        "operation_record_ids": {
+          "description": "Ordered immutable provenance references for CRS/datum operations used to create these coordinates; empty only for coordinates already authoritative in this frame.",
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "type": "string",
+            "pattern": "^urn:worldforge:operation:[A-Za-z0-9._~:/-]+$"
+          }
+        }
+      }
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_id",
+        "schema_version",
+        "required",
+        "data"
+      ],
+      "properties": {
+        "schema_id": {
+          "type": "string",
+          "pattern": "^urn:worldforge:component:[A-Za-z0-9._~:/-]+$",
+          "maxLength": 255
+        },
+        "schema_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "data": {
+          "type": "object"
+        }
+      }
+    },
+    "source_provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "dataset_id",
+        "dataset_version",
+        "feature_id",
+        "source_snapshot_sha256",
+        "provenance_record_id"
+      ],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "dataset_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "dataset_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "feature_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "source_snapshot_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "provenance_record_id": {
+          "type": "string",
+          "pattern": "^urn:worldforge:provenance:[A-Za-z0-9._~:/-]+$",
+          "maxLength": 255
+        }
+      }
+    },
+    "world_object": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "object_id",
+        "object_kind",
+        "revision",
+        "position",
+        "components"
+      ],
+      "properties": {
+        "object_id": {
+          "type": "string",
+          "pattern": "^urn:worldforge:object:[A-Za-z0-9._~-]+:[A-Za-z0-9._~:/-]+$",
+          "maxLength": 1024
+        },
+        "object_kind": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "position": {
+          "$ref": "#/$defs/position"
+        },
+        "components": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/component"
+          }
+        },
+        "source_provenance": {
+          "$ref": "#/$defs/source_provenance"
+        }
+      }
+    },
+    "tombstone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "object_id",
+        "deletion_revision",
+        "deleted_at_tick"
+      ],
+      "properties": {
+        "object_id": {
+          "type": "string",
+          "pattern": "^urn:worldforge:object:[A-Za-z0-9._~-]+:[A-Za-z0-9._~:/-]+$",
+          "maxLength": 1024
+        },
+        "deletion_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "deleted_at_tick": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      }
+    }
+  }
+}
