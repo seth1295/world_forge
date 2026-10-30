@@ -3,3 +3,7 @@ integration/features/fixtures/golden_dem_sample_vector_v1.json -text
 integration/assets/terrain/**/manifest.json -text
 docs/preproduction/evidence/terrain-consumer-gate-d-tests.log -text
 docs/preproduction/evidence/terrain-consumer-gate-d-adjacent-tests.log -text
+docs/preproduction/evidence/roads-feature-python-tests.log -text
+docs/preproduction/evidence/roads-feature-godot-tests.log -text
+docs/preproduction/evidence/generator-gate-d-tests.log -text
+docs/preproduction/evidence/simulation-foundations-tests.log -text

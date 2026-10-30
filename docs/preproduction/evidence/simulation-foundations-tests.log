@@ -1,0 +1,15 @@
+test_duplicate_and_dangling_object_identity_is_rejected (test_simulation_foundations_contract.SimulationFoundationsContractTests.test_duplicate_and_dangling_object_identity_is_rejected) ... ok
+test_frame_definition_hash_covers_exact_serialized_definition (test_simulation_foundations_contract.SimulationFoundationsContractTests.test_frame_definition_hash_covers_exact_serialized_definition) ... ok
+test_global_position_requires_complete_frame_declarations (test_simulation_foundations_contract.SimulationFoundationsContractTests.test_global_position_requires_complete_frame_declarations) ... ok
+test_lifecycle_spec_separates_unload_from_explicit_destruction (test_simulation_foundations_contract.SimulationFoundationsContractTests.test_lifecycle_spec_separates_unload_from_explicit_destruction) ... ok
+test_object_and_tombstone_cannot_share_identity (test_simulation_foundations_contract.SimulationFoundationsContractTests.test_object_and_tombstone_cannot_share_identity) ... ok
+test_position_requires_an_explicit_operation_record_list (test_simulation_foundations_contract.SimulationFoundationsContractTests.test_position_requires_an_explicit_operation_record_list) ... ok
+test_regional_chart_cannot_be_serialized_as_global_object_frame (test_simulation_foundations_contract.SimulationFoundationsContractTests.test_regional_chart_cannot_be_serialized_as_global_object_frame) ... ok
+test_runtime_node_identity_is_rejected_from_durable_record (test_simulation_foundations_contract.SimulationFoundationsContractTests.test_runtime_node_identity_is_rejected_from_durable_record) ... ok
+test_synthetic_snapshot_matches_schema_and_cross_record_rules (test_simulation_foundations_contract.SimulationFoundationsContractTests.test_synthetic_snapshot_matches_schema_and_cross_record_rules) ... ok
+test_unknown_future_snapshot_version_fails_closed (test_simulation_foundations_contract.SimulationFoundationsContractTests.test_unknown_future_snapshot_version_fails_closed) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.056s
+
+OK

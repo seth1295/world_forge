@@ -1,0 +1,19 @@
+test_clipping_keeps_exact_crop_intersections (test_roads_feature_v1.RoadsFeatureContractTests.test_clipping_keeps_exact_crop_intersections) ... ok
+test_geometry_is_clipped_finite_two_dimensional_and_resampled (test_roads_feature_v1.RoadsFeatureContractTests.test_geometry_is_clipped_finite_two_dimensional_and_resampled) ... ok
+test_known_terrain_sample_projection_and_height (test_roads_feature_v1.RoadsFeatureContractTests.test_known_terrain_sample_projection_and_height) ... ok
+test_mutated_pinned_terrain_manifest_is_rejected_before_parse (test_roads_feature_v1.RoadsFeatureContractTests.test_mutated_pinned_terrain_manifest_is_rejected_before_parse) ... ok
+test_mutated_pinned_terrain_payload_is_rejected_before_sampling (test_roads_feature_v1.RoadsFeatureContractTests.test_mutated_pinned_terrain_payload_is_rejected_before_sampling) ... ok
+test_mutated_source_archive_is_rejected_from_the_hashed_snapshot (test_roads_feature_v1.RoadsFeatureContractTests.test_mutated_source_archive_is_rejected_from_the_hashed_snapshot) ... ok
+test_output_aliases_are_rejected_before_any_write (test_roads_feature_v1.RoadsFeatureContractTests.test_output_aliases_are_rejected_before_any_write) ... ok
+test_oversized_file_is_rejected_before_open_or_read (test_roads_feature_v1.RoadsFeatureContractTests.test_oversized_file_is_rejected_before_open_or_read) ... ok
+test_rebuilt_output_matches_committed_bytes_when_archive_available (test_roads_feature_v1.RoadsFeatureContractTests.test_rebuilt_output_matches_committed_bytes_when_archive_available) ... ok
+test_resampling_and_output_are_deterministic (test_roads_feature_v1.RoadsFeatureContractTests.test_resampling_and_output_are_deterministic) ... ok
+test_selected_route_ids_and_mtfcc_fields_are_preserved (test_roads_feature_v1.RoadsFeatureContractTests.test_selected_route_ids_and_mtfcc_fields_are_preserved) ... ok
+test_source_and_derived_bundle_hashes (test_roads_feature_v1.RoadsFeatureContractTests.test_source_and_derived_bundle_hashes) ... ok
+test_source_zip_bytes_and_component_hashes_when_available (test_roads_feature_v1.RoadsFeatureContractTests.test_source_zip_bytes_and_component_hashes_when_available) ... ok
+test_versioned_contract_reuses_exact_golden_frame (test_roads_feature_v1.RoadsFeatureContractTests.test_versioned_contract_reuses_exact_golden_frame) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 1.160s
+
+OK

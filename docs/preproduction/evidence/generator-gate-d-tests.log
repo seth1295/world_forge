@@ -1,0 +1,113 @@
+=== producer region both exit 0 ===
+[
+  {
+    "acquired_at_utc": "2026-10-29T13:34:02Z",
+    "artifact_id": "517b4b97207ecde635ef5adb52303d4b3590ff3641254d18123406bfabd129f7",
+    "bundle_directory_name": "baltimore",
+    "frame_definition_sha256": "4edb7c5ddcb889c8617622c43a31faecbd0ecc567acfd70f721af4ee86456e54",
+    "height_payload_sha256": "f06c34b1a57d1c6705deb2bbbf7d848afabd1728cf0a31911eac375fff90e03b",
+    "horizontal_payload_sha256": "56d5970d3da90e5297c216619c5f202faaa91ec59f2853ed62d5beab011c0c87",
+    "metadata_sha256": "f8e8fda7359a2d8d66cdd6cd328482c622eb0ed32275c02e29465c3a00a8ec7e",
+    "product_record_sha256": "d87ee62c21834147f197828aa5319f4965c79a63506f2deb8914a9370c0e1af3",
+    "projected_sample_bounds_m": {
+      "easting_max": 854.8496405574942,
+      "easting_min": -862.8388895017249,
+      "northing_max": 1110.2588289162313,
+      "northing_min": -1099.929538813649
+    },
+    "raster_sha256": "628fd3bd2b2de7e36d37f7a28050db9f34bc73a7b9a8f77f54a488ec8ce757d0",
+    "region": "baltimore",
+    "source_height_max_m": 38.48807144165039,
+    "source_height_min_m": -0.23000000417232513
+  },
+  {
+    "acquired_at_utc": "2026-10-29T13:41:19Z",
+    "artifact_id": "d4b1bb11e84402136f50edf265a66991d8014326378edbeeaa67c4b169e31d98",
+    "bundle_directory_name": "golden",
+    "frame_definition_sha256": "3059daecf5eba37d0e4f2b12dc4468cf45d9d122b42db44cff7059357d0e94f7",
+    "height_payload_sha256": "249a1218475d7191c0d3a3484c5c50bbe6c09c3c39cbea23903c1ffe3dc85616",
+    "horizontal_payload_sha256": "8c39785b6c4fe91cf1497ff134dd3a00e6a45f504fa0b8baeddc8c4c4b5b52d6",
+    "metadata_sha256": "a43163a50c480a0ac50573a9fe4b9d50e6469ed317edf5399d4bf04ea2de28c7",
+    "product_record_sha256": "9cbbb36df1333b8636521eefdab35b2e8040bff216ae774dd0e2627a5e92195f",
+    "projected_sample_bounds_m": {
+      "easting_max": 1706.2757366363223,
+      "easting_min": -1714.2119027677074,
+      "northing_max": 1110.4915224630213,
+      "northing_min": -1100.0177830453054
+    },
+    "raster_sha256": "2a2ac1c4e0e571e5734bafff2b47f0b5cd864ddcb45b69085f0fbad86d44b4ba",
+    "region": "golden",
+    "source_height_max_m": 2093.890869140625,
+    "source_height_min_m": 1708.0218505859375
+  }
+]
+
+=== producer region golden-tiles exit 0 ===
+[
+  {
+    "acquired_at_utc": "2026-10-29T13:41:19Z",
+    "artifact_id": "f9ac01b194d487e6cfd69ac5b095af5fb6c268b76aaab873a51d515be7953132",
+    "bundle_directory_name": "golden-west",
+    "frame_definition_sha256": "3059daecf5eba37d0e4f2b12dc4468cf45d9d122b42db44cff7059357d0e94f7",
+    "height_payload_sha256": "d362ac74acbf8480e8e4ce59722b7c55ed6d0c80d3db4ef03c88f253c61e1744",
+    "horizontal_payload_sha256": "88d8ad5e760d604aa058461259ff15ce05633fd78611daf831d28b33802cc8fc",
+    "metadata_sha256": "a43163a50c480a0ac50573a9fe4b9d50e6469ed317edf5399d4bf04ea2de28c7",
+    "product_record_sha256": "9cbbb36df1333b8636521eefdab35b2e8040bff216ae774dd0e2627a5e92195f",
+    "projected_sample_bounds_m": {
+      "easting_max": 0.0,
+      "easting_min": -1714.2119027677074,
+      "northing_max": 1110.4915224630213,
+      "northing_min": -1100.0177830453054
+    },
+    "raster_sha256": "2a2ac1c4e0e571e5734bafff2b47f0b5cd864ddcb45b69085f0fbad86d44b4ba",
+    "region": "golden-west",
+    "source_height_max_m": 2093.890869140625,
+    "source_height_min_m": 1722.0880126953125
+  },
+  {
+    "acquired_at_utc": "2026-10-29T13:41:19Z",
+    "artifact_id": "cbda8c91369c60315a0caff753583ac05df8d1aa25a91208b75fc9df4a7e62c8",
+    "bundle_directory_name": "golden-east",
+    "frame_definition_sha256": "3059daecf5eba37d0e4f2b12dc4468cf45d9d122b42db44cff7059357d0e94f7",
+    "height_payload_sha256": "9f42da47f3b4059079da2af5bf8b686dd28300013e2bd8c5076a041c789fdd26",
+    "horizontal_payload_sha256": "c8fc55a19d0c5a29a2e4defacce1127d42c60a69fc0c0ff97864b4b47790eb77",
+    "metadata_sha256": "a43163a50c480a0ac50573a9fe4b9d50e6469ed317edf5399d4bf04ea2de28c7",
+    "product_record_sha256": "9cbbb36df1333b8636521eefdab35b2e8040bff216ae774dd0e2627a5e92195f",
+    "projected_sample_bounds_m": {
+      "easting_max": 1706.2757366363223,
+      "easting_min": -2.289924874926182e-08,
+      "northing_max": 1110.4897553627075,
+      "northing_min": -1100.0177830453054
+    },
+    "raster_sha256": "2a2ac1c4e0e571e5734bafff2b47f0b5cd864ddcb45b69085f0fbad86d44b4ba",
+    "region": "golden-east",
+    "source_height_max_m": 1931.093017578125,
+    "source_height_min_m": 1708.0218505859375
+  }
+]
+
+=== focused real-data suite exit 0 ===
+baltimore independent GRS80 samples (not bounds): radial/vector max=9.91829228645e-09 m, cross-pair max=1.82540020432e-06 m, inverse/direct round-trip max=7.55076544561e-09 m
+golden independent GRS80 samples (not bounds): radial/vector max=3.91186343217e-08 m, cross-pair max=5.28600003236e-06 m, inverse/direct round-trip max=3.45580740957e-08 m
+Golden adjacent tiles independent 13x13 GRS80 checks: max radial-vector error=5.24372339802e-08 m, max pairwise chart/geodesic error=2.66345109594e-05 m; 0.0011 m crop criterion (not source accuracy).
+test_both_regions_roll_back_new_outputs_and_preserve_existing_user_files (__main__.TerrainGridV1Tests.test_both_regions_roll_back_new_outputs_and_preserve_existing_user_files) ... ok
+test_bundle_validation_rejects_mutated_and_oversized_payload_reads (__main__.TerrainGridV1Tests.test_bundle_validation_rejects_mutated_and_oversized_payload_reads) ... ok
+test_bundle_validation_uses_hashed_buffer_after_payload_changes_on_disk (__main__.TerrainGridV1Tests.test_bundle_validation_uses_hashed_buffer_after_payload_changes_on_disk) ... ok
+test_cli_builds_fixture_and_samples_match_declared_grs80_aeqd (__main__.TerrainGridV1Tests.test_cli_builds_fixture_and_samples_match_declared_grs80_aeqd) ... ok
+test_golden_adjacent_windows_share_only_the_declared_boundary_column (__main__.TerrainGridV1Tests.test_golden_adjacent_windows_share_only_the_declared_boundary_column) ... ok
+test_golden_tiles_cli_checks_frame_seam_hashes_and_reproducibility (__main__.TerrainGridV1Tests.test_golden_tiles_cli_checks_frame_seam_hashes_and_reproducibility) ... ok
+test_golden_tiles_failure_rolls_back_only_new_output (__main__.TerrainGridV1Tests.test_golden_tiles_failure_rolls_back_only_new_output) ... ok
+test_golden_tiles_seam_failure_rolls_back_both_new_outputs (__main__.TerrainGridV1Tests.test_golden_tiles_seam_failure_rolls_back_both_new_outputs) ... ok
+test_manifest_payload_reader_rejects_invalid_metadata_before_open (__main__.TerrainGridV1Tests.test_manifest_payload_reader_rejects_invalid_metadata_before_open) ... ok
+test_parser_corruption_and_existing_output_fail_without_overwrite (__main__.TerrainGridV1Tests.test_parser_corruption_and_existing_output_fail_without_overwrite) ... ok
+test_partial_payload_write_is_removed_without_touching_other_output (__main__.TerrainGridV1Tests.test_partial_payload_write_is_removed_without_touching_other_output) ... ok
+test_producer_commit_rejects_tracked_and_untracked_status_output (__main__.TerrainGridV1Tests.test_producer_commit_rejects_tracked_and_untracked_status_output) ... ok
+test_real_bundle_integrity_source_bits_and_independent_geodesy (__main__.TerrainGridV1Tests.test_real_bundle_integrity_source_bits_and_independent_geodesy) ... ok
+test_rejects_duplicate_json_keys_and_invalid_height_samples (__main__.TerrainGridV1Tests.test_rejects_duplicate_json_keys_and_invalid_height_samples) ... ok
+test_source_sizes_are_bounded_before_hashing_and_receipt_comes_from_ledger (__main__.TerrainGridV1Tests.test_source_sizes_are_bounded_before_hashing_and_receipt_comes_from_ledger) ... ok
+test_synthetic_cross_language_hash_vector_and_payloads (__main__.TerrainGridV1Tests.test_synthetic_cross_language_hash_vector_and_payloads) ... ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 3.135s
+
+OK

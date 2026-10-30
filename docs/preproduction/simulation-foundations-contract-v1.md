@@ -78,7 +78,7 @@ The state contract may preserve a provenance reference for source-derived object
 - `contracts/world_state_v1.schema.json` defines the v1 snapshot envelope and rejects unknown top-level/object/frame fields.
 - `contracts/examples/world_state_v1_minimal.json` is synthetic, contains an unresolved WGS 84 geocentric frame declaration, one identity-only fixture record, and one tombstone; it is not terrain or a global datum validation.
 - `contracts/stream_binding_lifecycle_v1.json` states the volatile binding transitions and unload/destroy distinction.
-- `tools/tests/test_simulation_foundations_contract.py` checks the JSON Schema, accepted/rejected snapshot cases, cross-record identity/frame invariants, and lifecycle-table invariants with Python's JSON Schema Draft 2020-12 validator. It ran on Python 3.12.10 with `jsonschema` 4.26.0; that test-only package is present in the checked workstation environment but is not added as a project dependency.
+- `tools/tests/test_simulation_foundations_contract.py` checks the JSON Schema, accepted/rejected snapshot cases, cross-record identity/frame invariants, and lifecycle-table invariants with Python's JSON Schema Draft 2020-12 validator. Main Lead ran it on Python 3.12.10 with `jsonschema` 4.26.0; that test-only package is present in the checked workstation environment but is not added as a project dependency. Raw output is [simulation-foundations-tests.log](evidence/simulation-foundations-tests.log), 2,067 bytes, SHA-256 `D575A2210A856987CC316FA70A4686366260A8310D3F2EACCA9BEAE1BB691469`.
 
 Run the focused contract check from the parent repository root with:
 
