@@ -33,7 +33,7 @@
   },
   "frame_definition_sha256": "3059daecf5eba37d0e4f2b12dc4468cf45d9d122b42db44cff7059357d0e94f7",
   "generation": {
-    "created_utc": "2026-10-30T01:25:36Z",
+    "created_utc": "2026-10-30T02:41:38Z",
     "resampling": "none",
     "source_window": {
       "column_offset": 8214,
@@ -94,13 +94,13 @@
     }
   },
   "producer": {
-    "commit": "325cd2c4048bc9cf19a2287afc4de51c145f4490",
+    "commit": "ebfced70485dda28bf7893663cf744bc3de50dec",
     "name": "WorldForge Terrain Grid Producer",
     "version": "1.0.0"
   },
   "source": {
     "acquired_at_utc": "2026-10-29T13:41:19Z",
-    "acquisition_time_basis": "recorded_download_receipt",
+    "acquisition_time_basis": "filesystem_creation_time",
     "dataset": "3D Elevation Program (3DEP), 1/3 arc-second bare-earth elevation",
     "metadata": {
       "byte_length": 12962,
