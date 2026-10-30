@@ -806,7 +806,10 @@
         {
           "if": { "properties": { "payload_kind": { "const": "vector_shard" } }, "required": ["payload_kind"] },
           "then": {
-            "properties": { "media_type": { "const": "application/geo+json" } },
+            "properties": {
+              "media_type": { "const": "application/geo+json" },
+              "coordinate_dimensions": { "const": 2 }
+            },
             "required": ["feature_count", "geometry_types", "coordinate_dimensions"],
             "not": { "anyOf": [
               { "required": ["shape"] },
