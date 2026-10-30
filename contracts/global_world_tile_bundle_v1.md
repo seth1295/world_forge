@@ -34,7 +34,7 @@ landcover/classes.u8
 vegetation/placement_support.u8
 ```
 
-Only payloads listed for a layer may be consumed. The two raw producer manifests are the only additional files and their relative paths, byte lengths, and SHA-256 values are listed under `producers`; they are retained byte-for-byte for audit. Optional layer payloads must be omitted from that layer's `payloads` array when not available. Temporary staging data is never a published bundle.
+Only payloads listed for a layer may be consumed. `terrain` may contain `raster_grid` and `terrain_boundary_support`; `landcover` and `vegetation` may contain only `raster_grid`; `roads`, `buildings`, and `water` may contain only `vector_shard`. A ready terrain layer must contain at least one raster grid; boundary support alone is not a terrain surface. The two raw producer manifests are the only additional files and their relative paths, byte lengths, and SHA-256 values are listed under `producers`; they are retained byte-for-byte for audit. Optional layer payloads must be omitted from that layer's `payloads` array when not available. Temporary staging data is never a published bundle.
 
 ## 2. Canonical manifest
 

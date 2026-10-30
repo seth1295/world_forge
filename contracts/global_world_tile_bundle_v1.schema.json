@@ -1368,13 +1368,31 @@
       "allOf": [
         { "$ref": "#/$defs/layer" },
         {
+          "properties": {
+            "payloads": {
+              "items": {
+                "anyOf": [
+                  { "properties": { "payload_kind": { "const": "raster_grid" } }, "required": ["payload_kind"] },
+                  { "properties": { "payload_kind": { "const": "terrain_boundary_support" } }, "required": ["payload_kind"] }
+                ]
+              }
+            }
+          }
+        },
+        {
           "if": {
             "properties": { "status": { "const": "ready" } },
             "required": ["status"]
           },
           "then": {
             "required": ["sample_count"],
-            "properties": { "payloads": { "minItems": 1 } }
+            "properties": {
+              "payloads": {
+                "minItems": 1,
+                "contains": { "properties": { "payload_kind": { "const": "raster_grid" } }, "required": ["payload_kind"] },
+                "minContains": 1
+              }
+            }
           }
         }
       ]
@@ -1382,6 +1400,13 @@
     "raster_pixel_layer": {
       "allOf": [
         { "$ref": "#/$defs/layer" },
+        {
+          "properties": {
+            "payloads": {
+              "items": { "properties": { "payload_kind": { "const": "raster_grid" } }, "required": ["payload_kind"] }
+            }
+          }
+        },
         {
           "if": {
             "properties": { "status": { "const": "ready" } },
@@ -1397,6 +1422,13 @@
     "vector_layer": {
       "allOf": [
         { "$ref": "#/$defs/layer" },
+        {
+          "properties": {
+            "payloads": {
+              "items": { "properties": { "payload_kind": { "const": "vector_shard" } }, "required": ["payload_kind"] }
+            }
+          }
+        },
         {
           "if": {
             "properties": { "status": { "const": "ready" } },
