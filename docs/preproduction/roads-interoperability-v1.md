@@ -82,7 +82,7 @@ longitude [-105.24, -105.20]
 latitude  [ 39.745,  39.765]
 ~~~
 
-The complete county ZIP is not stored in the repository. The source-to-feature converter checks archive size before allocation, reads it once into a bounded immutable byte snapshot, hashes that exact buffer, and passes it to the ZIP reader without reopening the path. It checks each component hash, validates the .prj, parses only the needed PolyLine/DBF data, clips to the crop, and emits the three selected features. The pinned Golden manifest and terrain payloads are also read through bounded snapshots and verified against their recorded hashes before parsing or sampling; projection identity checks use those same verified buffers. The converter pins the 6,874-byte Golden manifest at SHA-256 `7e7a413a2446dc5464dbddbb215143105f009111fcf155b0a79df6cfe8c014a9`; its 1,492,992-byte horizontal XY and 373,248-byte height payloads are checked against the manifest hashes before use.
+The complete county ZIP is not stored in the repository. The source-to-feature converter checks archive size before allocation, reads it once into a bounded immutable byte snapshot, hashes that exact buffer, and passes it to the ZIP reader without reopening the path. It checks each component hash, validates the .prj, parses only the needed PolyLine/DBF data, clips to the crop, and emits the three selected features. The pinned Golden manifest and terrain payloads are also read through bounded snapshots and verified against their recorded hashes before parsing or sampling; projection identity checks use those same verified buffers. The converter pins the 6,724-byte Gate E Golden manifest produced by generator head 325cd2c at SHA-256 `a590c84e2be9a0ccfe0297031f777e5d6e5da3a1d1508554a15a123d30a06948`; `.gitattributes` preserves pinned JSON bytes on Windows; its 1,492,992-byte horizontal XY and 373,248-byte height payloads are checked against the manifest hashes before use.
 
 ## Versioned feature interchange
 
@@ -225,3 +225,11 @@ The first Godot invocation before --editor --import --quit did not have the proj
 - Production road source selection, positional-quality policy, alignment tolerances, road widths/surfaces, grade separation, and network semantics remain open.
 
 This is a feasibility slice for one local data path. It is not a production road model or an accuracy claim.
+
+## Gate E combined Windows verification
+
+Main Lead reran the 14-test Python suite after the Golden manifest and site catalog were aligned to generator 325cd2c. All 14 tests passed against the official Census archive and the current 6,724-byte Golden manifest; the generated feature JSON remained byte-identical at 70,668 bytes and SHA-256 c92a254d1e92727fa325fd1ede7fdc5186b86e1ff4ccf0550f0f8eddbe087d96. The pinned Godot roads suite also passed on the combined local parent branch, which retains the accuracy/no-survey-fit success HUD.
+
+Main Lead captured the actual 1920x1080 windowed scene again from that combined branch with the pinned Godot executable and current producer-325 terrain manifest. The image was byte-identical to the earlier capture: 473,140 bytes, SHA-256 a3a80cf32d8c72ba4fa6a13d2b5cdc71c94c1bc66de337ef11250fe00dc2043c. Runtime logs identify the Golden frame and artifact, the Census archive digest, all three feature IDs, 351 supported / 13 unsupported terrain samples, 1,641 display vertices, 35 intermediate support misses and the 3 m display offset. The root-certificate-store diagnostic still appeared; this run used only local data.
+
+These are Main Lead reproduction results, not independent QA approval. The exact combined parent head and road integration still await an independent review after QA capacity is available.

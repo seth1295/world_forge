@@ -1,6 +1,6 @@
 # Gate D: approved source-raster identity and window catalog
 
-**Status:** Implemented and tested on a fresh feature branch from parent main `bc11b65f90688161e77f69eea7ee37c1186a6b46`. Independent Gate D review remains pending. The Terrain Grid v1 schema is unchanged, and the existing Baltimore and Golden bundles remain valid.
+**Status:** Source identity is implemented at local commit 5ad6487d7fc78f3b8972544d998e8b81731da3cd and incorporated into the local Gate E handoff branch. Its focused contract suite reports 58/58 tests. The v1 schema is unchanged; existing Baltimore and Golden bundles remain valid. Final exact-head independent QA is still pending.
 
 ## Source descriptor allowlist
 
@@ -22,7 +22,7 @@ The schema `contracts/terrain_grid_v1.schema.json` is unchanged at Git blob `87b
 - Godot source gitlink: `d7339113911696eac113d77df633c6a2571f1ec0`.
 - Godot executable: `4.8.beta.double.custom_build.d73391139`, SHA-256 `FEE4AE8EA772111CE72F2B20F21DC2258C97926B989AA8E2092D337CE28E246B`.
 - Generator gitlink: `6d4cf589a278b5e2eea668c25bc43469f4d45791`.
-- Manifest producer commit: `635c250cc251d72724edeb4d338240f1344a8c91`.
+- Original Gate C full-window manifest producer commit: `635c250cc251d72724edeb4d338240f1344a8c91`; the current combined Gate E candidate regenerates its manifests at producer `325cd2c`.
 
 The full focused suite used task-local `APPDATA`, `LOCALAPPDATA`, `TEMP`, and `TMP` below `%TEMP%`. With `$RepoRoot`, `$GodotExe`, and `$Integration` set to the local checkout/executable/project:
 

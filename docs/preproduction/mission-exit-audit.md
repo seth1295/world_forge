@@ -1,0 +1,38 @@
+# WorldForge pre-production exit audit
+
+**Audit date:** 2026-10-30
+**Status:** INCOMPLETE. This audit records evidence available on the local Gate E handoff branch. It is not a final QA approval or mission-completion declaration.
+**Parent main base:** bc11b65f90688161e77f69eea7ee37c1186a6b46
+**Local handoff:** codex/gate-e-preproduction-handoff, based on adjacent-consumer head 4a23601a4cacb20db1eb752cb03574dd6c76803c. Local-only changes combine the adjacent terrain work, roads proof, foundations contract and roadmap. The candidate generator gitlink is 325cd2c4048bc9cf19a2287afc4de51c145f4490; Godot remains d7339113911696eac113d77df633c6a2571f1ec0.
+
+## Exit criteria
+
+| Criterion | Current status | Evidence and remaining work |
+|---|---|---|
+| WF-EXIT-01 — Correct scope | PASS for the reviewed baseline | Parent, generator and Godot remain separate. New producer, terrain, road and contract work does not add a BeamNG runtime dependency. Inherited coupling remains in the risk register. Recheck the combined final diff before publication. |
+| WF-EXIT-02 — Inherited baseline | PASS | Baseline ledger records actual pins, capabilities, build/test environment, licences and known gaps; the Gate A reviewers assessed that exact baseline. |
+| WF-EXIT-03 — Real independent producer | PASS for the merged baseline path; Gate D extension not yet QA-approved | The merged generator produced real Baltimore and Golden terrain through Terrain Grid v1. Main Lead regenerated both legacy regions and the Golden split from verified local USGS snapshots at generator head 325cd2c; the exact focused suite passed 16/16 and payloads/artifact IDs matched all four checked-in bundles. Independent QA of 325 is still outstanding. |
+| WF-EXIT-04 — Real Godot consumer | PASS for merged Gate C; local Gate D reproduction complete, final QA pending | Gate C PR #2 was QA-approved and merged. Main Lead reran the combined local parent branch with the pinned Godot build: import exit 0, full terrain 232/232, focused adjacent 137/137 and roads suite PASS. It used regenerated 325 manifests and task-local app-data. Existing captures and camera provenance are in the handoff; the updated combined branch still needs independent exact-head visual review. |
+| WF-EXIT-05 — Planetary feasibility | INCOMPLETE | WGS 84 geodetic/ECEF references cover equator, wrap, poles, high/southern latitude and large coordinates; two real regional charts have crop-specific GRS80 checks and origin arithmetic tests. The global datum bridge, world tile index, engine-wide origin manager and global LOD selector remain unproven. Current LOD is a Golden-crop structural prototype, not a planetary policy. |
+| WF-EXIT-06 — Streaming feasibility | INCOMPLETE | Main Lead reran 232/232 full and 137/137 focused checks on the combined local branch after producer 325 manifests/catalog alignment; pair install/unload, seam, LOD 0→1→0 and disabled LOD1 collision pass. Broader travel, retry/recovery and global origin behavior remain unproven, and final exact-head QA is outstanding. |
+| WF-EXIT-07 — Future game foundations | INCOMPLETE | The local proposal defines global-position references, stable object identity, volatile stream bindings, lifecycle states, tick/snapshot schemas and tombstones. Its structural suite reports 10/10 tests. There is no Godot runtime object registry, save/migration service or persistence recovery test; independent review of the exact contracts is outstanding. |
+| WF-EXIT-08 — Windows reproducibility | PASS for the demonstrated local-data workflow | Main Lead reproduced generator 16/16, roads 14/14 plus Godot PASS, terrain 232/232 and adjacent 137/137, and foundations 10/10 on the actual Windows workstation. Godot import and both terrain/roads runs exited 0 with isolated task-local app-data. The root-certificate-store diagnostic remains; remote HTTPS source acquisition is unverified and must not be inferred. Independent QA is pending. |
+| WF-EXIT-09 — Rights/provenance | PASS for the selected prototype sources, subject to final review | USGS 3DEP source records and the 2026 Census roads source, attribution and disclaimers are documented; no raw TIFF or full Census archive is included. The road data has no surveyed accuracy guarantee and no road-fit claim. Worldwide, commercial and non-USGS production rights remain explicit production gates. Final exact-head provenance review is outstanding. |
+| WF-EXIT-10 — Independent QA | BLOCKED / NOT VERIFIED | The QA Lead's completed verdicts apply only to the exact earlier SHAs cited in its reports. The QA Lead hit its Luna usage limit before reviewing generator 325cd2c, roads 4f8cdd8, source identity 5ad6487, consumer 4a23601, the foundations contracts and the current roadmap together. No final consolidated QA decision exists. |
+| WF-EXIT-11 — Production readiness | INCOMPLETE | The roadmap sequences pre-production closeout and production packages with dependencies and acceptance evidence. It is a planning draft and needs exact-state correction, independent review and linkage to the completed exit matrix and QA assessment. |
+
+## Evidence and bounded risks
+
+- Gate C is the last fully merged and QA-approved integration milestone. Gate D/E changes are local. An earlier automatic review rejected creating a public Gate D PR because it would disclose previously unpublished code, tests, logs and documentation; the mission-file authorization was not accepted as direct public-disclosure consent. No alternate publication route was used.
+- No final Gate D/E PR has been opened or merged. The current source-identity child branch previously had a public branch at 6b3aaa2; the corrected local source-identity commit is 5ad6487. The adjacent producer, consumer, roads and handoff revisions remain local.
+- The QA Lead's old reviews and test runs are retained as evidence for their named SHAs only. Do not carry approval forward to changed heads.
+- The Windows root-certificate-store diagnostic is documented. Tests used local source/bundle files and completed; this does not prove remote TLS/source acquisition works.
+- The adjacent test descriptions and captured logs were refreshed; `git diff --check` passes on the full and focused logs. The root-certificate-store diagnostic remains in the actual Godot logs.
+- No performance, profiling or efficiency threshold is part of this mission.
+
+## Required next actions
+
+1. Resume exact-head Luna xhigh QA when that review capacity is available, staying within the user's four-agent concurrency cap. Review the final generator and roads heads, source identity, adjacent consumer, foundations contracts, roadmap and the combined handoff; issue no approval for an unreviewed SHA.
+2. Correct any stale evidence, run the combined Windows integration and record exact commands/results, then update this matrix and a consolidated QA assessment.
+3. Obtain the direct owner authorization required by the automatic public-disclosure review before pushing or opening any new public PR. Push the generator child revision before a parent PR that pins it. Main Lead merges only the exact QA-approved heads.
+4. Keep WF-EXIT-05/06/07/10/11 incomplete until their stated evidence is independently reviewed. Do not declare pre-production complete while any row remains incomplete or not verified.

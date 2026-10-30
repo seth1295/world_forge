@@ -1,13 +1,15 @@
 Godot Engine v4.8.beta.double.custom_build.d73391139 (2026-10-29 07:26:32 UTC) - https://godotengine.org
 
+ERROR: Failed to read the root certificate store.
+   at: OS_Windows::get_system_ca_certificates (platform\windows\os_windows.cpp:2618)
 WF_TERRAIN_TEST_SUITE=all
 PASS  parent terrain schema parses with strict JSON
 PASS  strict JSON rejects duplicate object keys
 PASS  strict JSON rejects duplicate keys after escape decoding
 PASS  strict JSON enforces the manifest byte limit
 PASS  baltimore real producer bundle validates
-PASS  baltimore exposes the active default window ID from its window catalog
-PASS  baltimore window lookup inherits the approved shared source and frame
+PASS  baltimore exposes its configured default window ID in the site window catalog
+PASS  baltimore default window resolves with the approved shared source and frame
 PASS  baltimore artifact ID matches the requested site
 PASS  baltimore frame ID matches the approved regional frame
 PASS  baltimore geometry vertex count matches grid sample count
@@ -26,8 +28,8 @@ PASS  baltimore rejects a stale expected artifact ID
 PASS  baltimore rejects dimensions above the v1 sample cap before allocation
 PASS  baltimore rejects payload length inconsistent with dimensions
 PASS  golden real producer bundle validates
-PASS  golden exposes the active default window ID from its window catalog
-PASS  golden window lookup inherits the approved shared source and frame
+PASS  golden exposes its configured default window ID in the site window catalog
+PASS  golden default window resolves with the approved shared source and frame
 PASS  golden artifact ID matches the requested site
 PASS  golden frame ID matches the approved regional frame
 PASS  golden geometry vertex count matches grid sample count
@@ -47,8 +49,24 @@ PASS  golden rejects dimensions above the v1 sample cap before allocation
 PASS  golden rejects payload length inconsistent with dimensions
 PASS  site catalog resolves more than one window record
 PASS  adjacent-window records inherit one shared source-raster and frame identity
+PASS  window source overrides retain the full shared raster descriptor while recording per-window receipt provenance
 PASS  adjacent-window records retain distinct artifact and source-window identity
 PASS  site catalog rejects an unknown window ID
+PASS  producer-generated Golden west/east bundles validate as one adjacent window set: accepted
+PASS  adjacent set is ordered west to east
+PASS  adjacent windows share the approved 216 source rows at row offset 2544
+PASS  adjacent windows match their approved source columns and dimensions
+PASS  west/east windows share exactly source sample column 8430
+PASS  adjacent windows have the identical full frame and source raster identity
+PASS  shared column 8430 Float64 XY bytes are identical across all rows
+PASS  shared column 8430 Float32 height bytes are identical across all rows
+PASS  adjacent windows retain distinct artifact IDs
+PASS  center-to-center cell strips meet at the shared sample without area overlap
+WF_GOLDEN_ADJACENT_MAX_SHARED_VERTEX_DELTA_M=0.000000000000
+PASS  shared sample column produces identical local seam vertices
+PASS  adjacency normalization accepts reversed request order and returns west/east order
+PASS  adjacent window set rejects duplicate window IDs
+PASS  adjacent pair validator rejects one mutated shared-edge height byte
 PASS  stale negative payload fixture is removed before recreation
 PASS  consumer rejects payload bytes that do not match the manifest SHA-256
 PASS  invalid payload is rejected before terrain geometry allocation
@@ -157,4 +175,69 @@ PASS  site replacement leaves exactly one terrain tile
 PASS  Golden completion carries its original request ID
 PASS  unload removes the active render and collision node
 PASS  scene shutdown drains its worker before releasing the manager
-WF_TERRAIN_TEST_RESULT=PASS checks=153 failures=0
+PASS  adjacent window-set decode obeys the bounded worker/latest-request policy
+PASS  adjacent Golden pair completes before the functional test timeout
+PASS  one request atomically installs both adjacent Golden windows in canonical order: no load errors
+PASS  the complete pair emits one install event and owns exactly two terrain tiles: no load errors
+PASS  both neighbor render/collision roots are installed under the same manager
+PASS  adjacent tile stays at full-resolution LOD level 0
+PASS  adjacent tile advertises the shared atomic exact-sample LOD policy
+PASS  LOD 0 collision is explicitly marked source-sampled and ground-contact eligible
+PASS  each adjacent window installs both a visible mesh and static collision body
+PASS  adjacent tile stays at full-resolution LOD level 0
+PASS  adjacent tile advertises the shared atomic exact-sample LOD policy
+PASS  LOD 0 collision is explicitly marked source-sampled and ground-contact eligible
+PASS  each adjacent window installs both a visible mesh and static collision body
+PASS  west adjacent tile interior upward ray is ready after install
+PASS  west adjacent tile interior upward ray hits one of the intended neighboring collision bodies
+PASS  west adjacent tile interior upward ray resolves to the owning tile collision body
+PASS  west adjacent tile interior upward ray intersects the decoded sample position within 1 mm
+PASS  east adjacent tile interior upward ray is ready after install
+PASS  east adjacent tile interior upward ray hits one of the intended neighboring collision bodies
+PASS  east adjacent tile interior upward ray resolves to the owning tile collision body
+PASS  east adjacent tile interior upward ray intersects the decoded sample position within 1 mm
+PASS  installed neighbor meshes use the same local vertex at their shared sample
+PASS  shared adjacent tile boundary upward ray is ready after install
+PASS  shared adjacent tile boundary upward ray hits one of the intended neighboring collision bodies
+PASS  shared adjacent tile boundary upward ray intersects the decoded sample position within 1 mm
+PASS  one command switches both adjacent tiles together from LOD 0 to LOD 1: accepted
+PASS  LOD 1 collision is explicitly ineligible for ground-level contact
+PASS  coarse neighbor pair preserves exact shared sample rows and seam vertices
+PASS  LOD 1 replaces both old render/collision roots with new paired roots
+PASS  both neighbors advertise level 1 with exact stride-2 source sampling
+PASS  coarse LOD preserves the final source row and column
+PASS  LOD 1 collision explicitly refuses a ground-contact fidelity claim
+PASS  both neighbors advertise level 1 with exact stride-2 source sampling
+PASS  coarse LOD preserves the final source row and column
+PASS  LOD 1 collision explicitly refuses a ground-contact fidelity claim
+PASS  LOD 1 retains each outer edge and the shared global source column 8430
+PASS  LOD 1 uses exact existing source sample coordinates and heights without averaging or resampling
+WF_GOLDEN_ADJACENT_MAX_OMITTED_SAMPLE_DEVIATION_M=13.497314453
+PASS  LOD 1 records a finite observed omitted-sample deviation for the real crop
+PASS  LOD 1 renderer uses the reduced exact-sample geometry for both tiles
+PASS  LOD 1 coarse collision resources match their rendered triangle geometry
+PASS  LOD 1 collision is disabled on shapes and physics layers so it cannot affect contacts or queries
+PASS  west LOD 1 disabled collision cannot be hit by a same-index upward physics ray
+PASS  east LOD 1 disabled collision cannot be hit by a same-index upward physics ray
+PASS  both level-1 neighbors keep a bit-identical local shared seam vertex
+PASS  shared LOD 1 disabled boundary collision cannot be hit by a same-index upward physics ray
+PASS  one command switches both adjacent tiles together from LOD 1 back to LOD 0
+PASS  returning to LOD 0 restores the source-sampled ground-contact collision designation
+PASS  return transition rebuilds both neighbors at full resolution
+PASS  west returned LOD 0 tile upward ray is ready after install
+PASS  west returned LOD 0 tile upward ray hits one of the intended neighboring collision bodies
+PASS  west returned LOD 0 tile upward ray resolves to the owning tile collision body
+PASS  west returned LOD 0 tile upward ray intersects the decoded sample position within 1 mm
+PASS  east returned LOD 0 tile upward ray is ready after install
+PASS  east returned LOD 0 tile upward ray hits one of the intended neighboring collision bodies
+PASS  east returned LOD 0 tile upward ray resolves to the owning tile collision body
+PASS  east returned LOD 0 tile upward ray intersects the decoded sample position within 1 mm
+PASS  returned LOD 0 shared boundary upward ray is ready after install
+PASS  returned LOD 0 shared boundary upward ray hits one of the intended neighboring collision bodies
+PASS  returned LOD 0 shared boundary upward ray intersects the decoded sample position within 1 mm
+PASS  install signal reports one ordered complete window set
+PASS  adjacent load preserves the originating request ID
+PASS  unload releases the adjacent pair as one manager operation
+PASS  atomic adjacent unload detaches every render and collision root immediately
+PASS  adjacent install/unload leaves no decoder task or queued set
+WF_TERRAIN_TEST_RESULT=PASS checks=232 failures=0

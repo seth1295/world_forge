@@ -1,6 +1,8 @@
 Godot Engine v4.8.beta.double.custom_build.d73391139 (2026-10-29 07:26:32 UTC) - https://godotengine.org
 
-WF_TERRAIN_TEST_SUITE=all
+ERROR: Failed to read the root certificate store.
+   at: OS_Windows::get_system_ca_certificates (platform\windows\os_windows.cpp:2618)
+WF_TERRAIN_TEST_SUITE=adjacent
 PASS  parent terrain schema parses with strict JSON
 PASS  strict JSON rejects duplicate object keys
 PASS  strict JSON rejects duplicate keys after escape decoding
@@ -50,7 +52,7 @@ PASS  adjacent-window records inherit one shared source-raster and frame identit
 PASS  window source overrides retain the full shared raster descriptor while recording per-window receipt provenance
 PASS  adjacent-window records retain distinct artifact and source-window identity
 PASS  site catalog rejects an unknown window ID
-PASS  producer-generated Golden west/east bundles validate as one adjacent window set: 
+PASS  producer-generated Golden west/east bundles validate as one adjacent window set: accepted
 PASS  adjacent set is ordered west to east
 PASS  adjacent windows share the approved 216 source rows at row offset 2544
 PASS  adjacent windows match their approved source columns and dimensions
@@ -75,108 +77,10 @@ PASS  no-data mismatch is rejected before geometry allocation
 PASS  negative source and payload fixture files and directories are removed after verification
 PASS  bounded payload reader rejects a declared size above cap before allocation
 PASS  bounded payload reader rejects an opened file with a changed byte length
-PASS  WGS 84 forward conversion accepts reference (0.0, 0.0)
-PASS  WGS 84 forward XYZ matches independent fixed reference within 0.1 mm
-PASS  WGS 84 inverse conversion accepts fixed global reference
-PASS  WGS 84 inverse coordinates round-trip reference point within declared test tolerance
-PASS  WGS 84 forward conversion accepts reference (0.0, 180.0)
-PASS  WGS 84 forward XYZ matches independent fixed reference within 0.1 mm
-PASS  WGS 84 inverse conversion accepts fixed global reference
-PASS  WGS 84 inverse coordinates round-trip reference point within declared test tolerance
-PASS  WGS 84 forward conversion accepts reference (90.0, 0.0)
-PASS  WGS 84 forward XYZ matches independent fixed reference within 0.1 mm
-PASS  WGS 84 inverse conversion accepts fixed global reference
-PASS  WGS 84 inverse coordinates round-trip reference point within declared test tolerance
-PASS  WGS 84 forward conversion accepts reference (-90.0, 0.0)
-PASS  WGS 84 forward XYZ matches independent fixed reference within 0.1 mm
-PASS  WGS 84 inverse conversion accepts fixed global reference
-PASS  WGS 84 inverse coordinates round-trip reference point within declared test tolerance
-PASS  WGS 84 forward conversion accepts reference (45.0, 45.0)
-PASS  WGS 84 forward XYZ matches independent fixed reference within 0.1 mm
-PASS  WGS 84 inverse conversion accepts fixed global reference
-PASS  WGS 84 inverse coordinates round-trip reference point within declared test tolerance
-PASS  WGS 84 forward conversion accepts reference (80.0, -179.5)
-PASS  WGS 84 forward XYZ matches independent fixed reference within 0.1 mm
-PASS  WGS 84 inverse conversion accepts fixed global reference
-PASS  WGS 84 inverse coordinates round-trip reference point within declared test tolerance
-PASS  WGS 84 forward conversion accepts reference (-60.0, 170.0)
-PASS  WGS 84 forward XYZ matches independent fixed reference within 0.1 mm
-PASS  WGS 84 inverse conversion accepts fixed global reference
-PASS  WGS 84 inverse coordinates round-trip reference point within declared test tolerance
-PASS  WGS 84 forward conversion accepts reference (0.0, 0.0)
-PASS  WGS 84 forward XYZ matches independent fixed reference within 0.1 mm
-PASS  WGS 84 inverse conversion accepts fixed global reference
-PASS  WGS 84 inverse coordinates round-trip reference point within declared test tolerance
-PASS  WGS 84 forward conversion rejects latitude outside bounds
-PASS  WGS 84 forward conversion rejects longitude outside bounds
-PASS  WGS 84 forward conversion rejects height below its bound
-PASS  WGS 84 forward conversion rejects height above its bound
-PASS  WGS 84 inverse conversion rejects the geocentric singularity
-PASS  WGS 84 inverse conversion rejects ECEF radius above its bound
-PASS  two distinct WGS 84 ECEF origins are established
-PASS  Baltimore-area WGS 84 test point reconstruction after ECEF origin 1 subtraction stays within 1 mm
-PASS  Baltimore-area WGS 84 test point reconstructs to valid WGS 84 geodetic coordinates
-PASS  Baltimore-area WGS 84 test point geodetic location is invariant across local origins within 1 mm numeric error
-PASS  Baltimore-area WGS 84 test point reconstruction after ECEF origin 2 subtraction stays within 1 mm
-PASS  Baltimore-area WGS 84 test point reconstructs to valid WGS 84 geodetic coordinates
-PASS  Baltimore-area WGS 84 test point geodetic location is invariant across local origins within 1 mm numeric error
-PASS  Golden-area WGS 84 test point reconstruction after ECEF origin 1 subtraction stays within 1 mm
-PASS  Golden-area WGS 84 test point reconstructs to valid WGS 84 geodetic coordinates
-PASS  Golden-area WGS 84 test point geodetic location is invariant across local origins within 1 mm numeric error
-PASS  Golden-area WGS 84 test point reconstruction after ECEF origin 2 subtraction stays within 1 mm
-PASS  Golden-area WGS 84 test point reconstructs to valid WGS 84 geodetic coordinates
-PASS  Golden-area WGS 84 test point geodetic location is invariant across local origins within 1 mm numeric error
-PASS  high-latitude antimeridian test point reconstruction after ECEF origin 1 subtraction stays within 1 mm
-PASS  high-latitude antimeridian test point reconstructs to valid WGS 84 geodetic coordinates
-PASS  high-latitude antimeridian test point geodetic location is invariant across local origins within 1 mm numeric error
-PASS  high-latitude antimeridian test point reconstruction after ECEF origin 2 subtraction stays within 1 mm
-PASS  high-latitude antimeridian test point reconstructs to valid WGS 84 geodetic coordinates
-PASS  high-latitude antimeridian test point geodetic location is invariant across local origins within 1 mm numeric error
-WF_REBASE_MAX_ECEF_ERROR_M=0.000000000276
-PASS  baltimore actual terrain mesh and collision resources are created
-WF_MESH_VERTEX_MAX_DELTA_M[baltimore]=0.000066998796
-PASS  baltimore renderer uses the validated sample vertices within 1 mm
-PASS  baltimore renderer uses the fixed contract triangle indices
-PASS  baltimore collision triangles exactly match renderer index order
-PASS  baltimore terrain sample normals face upward
-PASS  baltimore upward ray from below hits the actual static terrain collision
-PASS  baltimore upward ray hits the terrain collision body
-PASS  baltimore upward ray intersects the same-index terrain vertex
-PASS  golden actual terrain mesh and collision resources are created
-WF_MESH_VERTEX_MAX_DELTA_M[golden]=0.000084075472
-PASS  golden renderer uses the validated sample vertices within 1 mm
-PASS  golden renderer uses the fixed contract triangle indices
-PASS  golden collision triangles exactly match renderer index order
-PASS  golden terrain sample normals face upward
-PASS  golden upward ray from below hits the actual static terrain collision
-PASS  golden upward ray hits the terrain collision body
-PASS  golden upward ray intersects the same-index terrain vertex
-PASS  rapid site toggles keep at most one worker and one replaceable latest request
-PASS  the queued request count is bounded independently of worker count
-PASS  baltimore asynchronous load completes before the functional test timeout
-PASS  the first rapid request is rejected after the latest-site replacement
-PASS  the latest queued request completes after the previous worker drains
-PASS  superseded rapid requests never install stale terrain
-PASS  the latest-only request queue drains after installation
-PASS  a site request made during a worker is held in the single latest slot
-PASS  unload clears the queued request immediately
-PASS  cancelled worker completion is observed and awaited
-PASS  unload invalidates and rejects a late asynchronous completion
-PASS  unload prevents both active and queued stale results from loading
-PASS  baltimore asynchronous load completes before the functional test timeout
-PASS  Baltimore bundle loads asynchronously in the parent scene
-PASS  one terrain tile owns its render and collision resources
-PASS  Baltimore completion carries its original request ID
-PASS  golden asynchronous load completes before the functional test timeout
-PASS  switching sites unloads Baltimore and loads Golden
-PASS  site replacement leaves exactly one terrain tile
-PASS  Golden completion carries its original request ID
-PASS  unload removes the active render and collision node
-PASS  scene shutdown drains its worker before releasing the manager
 PASS  adjacent window-set decode obeys the bounded worker/latest-request policy
 PASS  adjacent Golden pair completes before the functional test timeout
-PASS  one request atomically installs both adjacent Golden windows in canonical order: 
-PASS  the complete pair emits one install event and owns exactly two terrain tiles: 
+PASS  one request atomically installs both adjacent Golden windows in canonical order: no load errors
+PASS  the complete pair emits one install event and owns exactly two terrain tiles: no load errors
 PASS  both neighbor render/collision roots are installed under the same manager
 PASS  adjacent tile stays at full-resolution LOD level 0
 PASS  adjacent tile advertises the shared atomic exact-sample LOD policy
@@ -198,7 +102,7 @@ PASS  installed neighbor meshes use the same local vertex at their shared sample
 PASS  shared adjacent tile boundary upward ray is ready after install
 PASS  shared adjacent tile boundary upward ray hits one of the intended neighboring collision bodies
 PASS  shared adjacent tile boundary upward ray intersects the decoded sample position within 1 mm
-PASS  one command switches both adjacent tiles together from LOD 0 to LOD 1: 
+PASS  one command switches both adjacent tiles together from LOD 0 to LOD 1: accepted
 PASS  LOD 1 collision is explicitly ineligible for ground-level contact
 PASS  coarse neighbor pair preserves exact shared sample rows and seam vertices
 PASS  LOD 1 replaces both old render/collision roots with new paired roots
@@ -238,4 +142,4 @@ PASS  adjacent load preserves the originating request ID
 PASS  unload releases the adjacent pair as one manager operation
 PASS  atomic adjacent unload detaches every render and collision root immediately
 PASS  adjacent install/unload leaves no decoder task or queued set
-WF_TERRAIN_TEST_RESULT=PASS checks=232 failures=0
+WF_TERRAIN_TEST_RESULT=PASS checks=137 failures=0
