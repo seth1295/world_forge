@@ -21,7 +21,8 @@ terrain/height_samples.f32le
 terrain/source_mask.u8
 terrain/quality_mask.u8
 terrain/geoid_undulation.f32le       # when source conversion is available
-terrain/ellipsoidal_height.f32le      # when source conversion is available
+terrain/geoid_mask.u8                 # validity of the geoid conversion per sample
+terrain/ellipsoidal_height_samples.f64le # when source conversion is available
 roads/000000.geojson
 roads/000001.geojson
 buildings/000000.geojson
@@ -97,7 +98,7 @@ The following fields are required. The provider validates this external form, ve
 
 The values in `layers` above illustrate required structure only; an empty payload list is not a valid successful terrain or raster layer. A successful zero-feature vector query may have no geometry payload, but it must include `feature_count: 0`, the completed query extent, its source/release, and a coverage statement that makes no claim of surveyed absence.
 
-`source_id` identifies the configured combined source profile; `source_generation` identifies the immutable producer/data configuration for a request. They do not replace per-layer provenance. `lod` is a runtime representation level and is independent of WFG-1 address `level`. A producer that offers only native-source resolution may emit level 0 only. Do not claim LOD transitions until distinct representations for the same address are generated, loaded, transitioned, and tested.
+`source_id` identifies the configured combined source profile; `source_generation` identifies the immutable producer/data configuration for a request. They do not replace per-layer provenance. `lod` is a runtime representation level and is independent of WFG-1 address `level`. One source-native payload may be used to derive multiple render representations, but every derived level must identify its decimation/generalization method and preserve source data/provenance. Do not claim LOD transitions until distinct representations for the same address are actually produced and loaded, the transition is exercised, and shared-edge/collision behavior is verified.
 
 `tile_origin` is the WGS84 geodetic center of the WFG-1 bounds at ellipsoidal height 0 m. It is a stable geometric tangent-frame anchor, not the local terrain elevation or a claim that the surface at the center is sea level. If an `ecef_m` value is included, it must use binary64 values and equal the independently recomputed WGS84 ECEF coordinates from the declared longitude, latitude, and ellipsoidal height within the documented arithmetic tolerance. The runtime may recompute this value rather than trusting it.
 
@@ -105,7 +106,7 @@ The values in `layers` above illustrate required structure only; an empty payloa
 
 WFG-1 addresses identify a hierarchy of geographic **extents**. Level 0 cells are 0.25 degrees wide and high, with `x` increasing east from longitude -180 and `y` increasing north from latitude -90. Each next address level halves both angular dimensions. Coordinates use normalized longitude in `[-180, 180)`; positive 180 maps to negative 180. Cells own their west and south edges and exclude east and north edges, except the global north pole belongs to the last northern row.
 
-The address's normalized lookup coordinates are EPSG:4326 longitude/latitude on the WGS 84 datum. This does not relabel or erase a source dataset's realization, epoch, axis order, or datum. Preserve those in `source_lineage` and record any operation used to transform source coordinates into the bundle's normalized address coordinates. `lod` describes a representation of one fixed WFG-1 extent; never use it as an alternate geographic address.
+The address's normalized lookup coordinates are EPSG:4326 longitude/latitude on the WGS 84 datum. This does not relabel or erase a source dataset's realization, epoch, axis order, or datum. Preserve those in `source_lineage` and record any operation used to transform source coordinates into the bundle's normalized address coordinates. `lod` describes a rendering/collision representation of one fixed WFG-1 extent; never use it as an alternate geographic address. A runtime may derive coarser mesh levels from the same source-native raster, provided the decimation, edge ownership, topology, and collision readiness are explicit. This does not change the original data's source resolution or create new source detail.
 
 Terrain, vector features, water, land-cover samples and derived vegetation positions must be positioned from their own declared source coordinates and height semantics. All installed layers use the shared bundle tile origin and the runtime's local tangent frame. Source geometry is not placed at world-scale single-precision coordinates. A derived road or vegetation mesh may use procedural style parameters, but its metadata must distinguish those derived values from observed source attributes.
 
